@@ -29,6 +29,7 @@ dependencies {
 	runtimeOnly 'com.mysql:mysql-connector-j'
 	testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
 	testAnnotationProcessor 'org.projectlombok:lombok'
+	implementation 'com.amazonaws:aws-java-sdk-s3:1.12.744'
 }
 
 tasks.named('test') {
