@@ -52,6 +52,8 @@ public class FileUtil {
     }
 
     public String deleteFromS3(String fileName){
+        if (fileName == null || fileName.isBlank()) return null;
+
         String[] onlyFileName = fileName.split(".com/");
         String changeFileName = URLDecoder.decode(onlyFileName[1], StandardCharsets.UTF_8);
 
