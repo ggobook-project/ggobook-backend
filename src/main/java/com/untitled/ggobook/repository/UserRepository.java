@@ -1,0 +1,14 @@
+package com.untitled.ggobook.repository;
+
+import com.untitled.ggobook.entity.User;
+import org.springframework.data.jpa.repository.JpaRepository;
+import java.util.Optional;
+
+public interface UserRepository extends JpaRepository<User, Long> {
+    Optional<User> findByUserId(String userId);
+
+    // 🌟 중복 확인용 마법의 메서드 3개 추가 🌟
+    boolean existsByUserId(String userId);     // 아이디가 존재하면 true 반환
+    boolean existsByNickname(String nickname); // 닉네임이 존재하면 true 반환
+    boolean existsByEmail(String email);       // 이메일이 존재하면 true 반환
+}

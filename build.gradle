@@ -29,6 +29,17 @@ dependencies {
 	runtimeOnly 'com.mysql:mysql-connector-j'
 	testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
 	testAnnotationProcessor 'org.projectlombok:lombok'
+
+	// 1. 스프링 시큐리티 (보안 및 로그인)
+	implementation 'org.springframework.boot:spring-boot-starter-security'
+
+	// 2. 유효성 검사 (@Valid 등)
+	implementation 'org.springframework.boot:spring-boot-starter-validation'
+
+	// 3. JWT 토큰 처리 (재료 3개)
+	implementation 'io.jsonwebtoken:jjwt-api:0.11.5'
+	runtimeOnly 'io.jsonwebtoken:jjwt-impl:0.11.5'
+	runtimeOnly 'io.jsonwebtoken:jjwt-jackson:0.11.5'
 	implementation 'com.amazonaws:aws-java-sdk-s3:1.12.744'
 }
 
