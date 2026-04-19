@@ -39,7 +39,16 @@ public class Content {
 
     private LocalDateTime createdAt = LocalDateTime.now();
 
+    // 양방향 관계 설정 및 무한 루프 방지
     @ToString.Exclude
     @OneToMany(mappedBy = "content", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<Episode> episodes = new ArrayList<>();
+
+    @ToString.Exclude
+    @OneToMany(mappedBy = "content", cascade = CascadeType.ALL)
+    private List<ContentTag> tags = new ArrayList<>();
+
+    @ToString.Exclude
+    @OneToMany(mappedBy = "content", cascade = CascadeType.ALL)
+    private List<Rating> ratings = new ArrayList<>();
 }

@@ -45,4 +45,19 @@ public class Episode {
     @ToString.Exclude
     @OneToMany(mappedBy = "episode", cascade = CascadeType.ALL)
     private List<ComicToon> comicToons = new ArrayList<>();
+
+    // AI 추출 메서드 (캡슐화 완벽 적용)
+    public String getExtractableTextForAI() {
+        if (this.content == null || this.content.getType() == null) {
+            return null;
+        }
+
+        String type = this.content.getType();
+
+        if ("NOVEL".equalsIgnoreCase(type) && this.novel != null) {
+            return this.novel.getContentText();
+        }
+        // ✅ 웹툰("COMIC")이거나 그 외의 경우 요약할 텍스트가 없다고 명시적으로 null을 반환합니다.
+        return null;
+    }
 }
