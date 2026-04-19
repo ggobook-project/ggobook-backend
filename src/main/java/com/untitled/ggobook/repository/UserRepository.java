@@ -1,6 +1,5 @@
 package com.untitled.ggobook.repository;
 
-import com.untitled.ggobook.entity.User;
 import org.springframework.data.jpa.repository.JpaRepository;
 import java.util.Optional;
 

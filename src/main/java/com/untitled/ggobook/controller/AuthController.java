@@ -2,7 +2,6 @@ package com.untitled.ggobook.controller;
 
 import com.untitled.ggobook.domain.LoginRequest;
 import com.untitled.ggobook.domain.SignupRequest;
-import com.untitled.ggobook.entity.User;
 import com.untitled.ggobook.service.AuthService;
 import com.untitled.ggobook.util.JwtUtil;
 import jakarta.servlet.http.Cookie;

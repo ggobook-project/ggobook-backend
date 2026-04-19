@@ -1,7 +1,6 @@
 package com.untitled.ggobook.service;
 
 import com.untitled.ggobook.domain.SignupRequest;
-import com.untitled.ggobook.entity.User;
 import com.untitled.ggobook.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.crypto.password.PasswordEncoder;
