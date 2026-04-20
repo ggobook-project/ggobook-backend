@@ -11,7 +11,7 @@ import java.time.format.DateTimeFormatter;
 import java.util.List;
 import java.util.Map;
 
-@CrossOrigin(origins = "http://localhost:5173")
+//@CrossOrigin(origins = "http://localhost:5173")
 @RestController
 @RequestMapping("/api/admin/inspections")
 @RequiredArgsConstructor
@@ -19,9 +19,15 @@ public class AdminInspectionController {
 
     private final AdminInspectionService adminService;
 
+    @GetMapping("/approved")
+    public ResponseEntity<List<Episode>> getApprovedList() {
+        return ResponseEntity.ok(adminService.getApprovedList());
+    }
+
     // 1. 통합 검수 대기 목록 조회 (모든 신규 작품/회차 목록)
     @GetMapping
     public ResponseEntity<List<Episode>> getInspectionList() {
+        System.out.println(adminService.getApprovedList());
         return ResponseEntity.ok(adminService.getInspectionList());
     }
 
