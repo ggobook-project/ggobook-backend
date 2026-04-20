@@ -3,7 +3,6 @@ package com.untitled.ggobook.domain;
 import jakarta.persistence.*;
 import lombok.Data;
 import lombok.ToString;
-
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
@@ -21,10 +20,10 @@ public class RelayNovel {
     @Column(name = "user_id", nullable = false)
     private Long userId;
 
-    // 관리자 주제 (없으면 NULL)
+    // 이제 관리자 주제가 아닌 유저 주제(RelayTopic)를 참조합니다.
     @ToString.Exclude
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "topic_id")
+    @JoinColumn(name = "topic_id", nullable = false)
     private RelayTopic relayTopic;
 
     @Column(nullable = false, length = 100)
@@ -33,14 +32,22 @@ public class RelayNovel {
     @Column(columnDefinition = "TEXT")
     private String description;
 
-    @Column(nullable = false)
-    private LocalDateTime createdAt = LocalDateTime.now();
+    @Column(nullable = false, updatable = false)
+    private LocalDateTime createdAt;
 
     @Column(nullable = false)
     private LocalDateTime updatedAt = LocalDateTime.now();
 
     // 이어쓰기 목록 (양방향)
+    // 소설에 달린 이어쓰기 목록 (1:N)
     @ToString.Exclude
     @OneToMany(mappedBy = "relayNovel", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<RelayEntry> entries = new ArrayList<>();
+
+    @PrePersist
+    public void prePersist() {
+        LocalDateTime now = LocalDateTime.now();
+        this.createdAt = now;
+        this.updatedAt = now;
+    }
 }

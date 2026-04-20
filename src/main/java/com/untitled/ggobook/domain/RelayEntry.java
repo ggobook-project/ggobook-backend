@@ -33,4 +33,10 @@ public class RelayEntry {
 
     @Column(nullable = false)
     private LocalDateTime createdAt = LocalDateTime.now();
+
+    // 엔티티가 DB에 처음 저장되기 직전에 실행
+    @PrePersist
+    public void prePersist() {
+        this.createdAt = LocalDateTime.now();
+    }
 }
