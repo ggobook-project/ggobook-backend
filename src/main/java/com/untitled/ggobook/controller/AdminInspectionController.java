@@ -50,7 +50,7 @@ public class AdminInspectionController {
                 DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss")
         );
         Episode episode = episodeService.getEpisodeDetail(episodeId);
-        adminService.approveEpisode(episode, scheduledAt);
+        adminService.approveEpisode(episodeId, scheduledAt);
         return ResponseEntity.ok("성공적으로 승인되었습니다.");
     }
 
@@ -62,7 +62,7 @@ public class AdminInspectionController {
 
         Episode episode = episodeService.getEpisodeDetail(episodeId);
         String rejectReason = requestData.get("rejectReason");
-        adminService.rejectEpisode(episode, rejectReason);
+        adminService.rejectEpisode(episodeId, rejectReason);
         return ResponseEntity.ok("반려 처리가 완료되었습니다.");
     }
 }
