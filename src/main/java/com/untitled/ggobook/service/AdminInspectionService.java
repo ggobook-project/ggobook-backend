@@ -24,16 +24,8 @@ public class AdminInspectionService {
         return episodeRepository.findByStatus(Status.PENDING);
     }
 
-    @Transactional(readOnly = true)
-    public Episode getEpisodeDetail(Long episodeId) {
-        // ✅ [수정] 기본 findById 대신 Fetch Join이 적용된 쿼리를 사용합니다.
-        return episodeRepository.findByIdWithDetails(episodeId)
-                .orElseThrow(() -> new IllegalArgumentException("해당 회차를 찾을 수 없습니다."));
-    }
-
     @Transactional
-    public void approveEpisode(Long episodeId, LocalDateTime scheduledAt) {
-        Episode episode = getEpisodeDetail(episodeId);
+    public void approveEpisode(Episode episode, LocalDateTime scheduledAt) {
         Content content = episode.getContent();
 
         String textForAI = episode.getExtractableTextForAI();
@@ -54,8 +46,7 @@ public class AdminInspectionService {
     }
 
     @Transactional
-    public void rejectEpisode(Long episodeId, String rejectReason) {
-        Episode episode = getEpisodeDetail(episodeId);
+    public void rejectEpisode(Episode episode, String rejectReason) {
         Content content = episode.getContent();
 
         episode.setStatus(Status.REJECTED);

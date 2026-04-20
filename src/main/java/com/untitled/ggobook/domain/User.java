@@ -1,4 +1,4 @@
-package com.untitled.ggobook.entity;
+package com.untitled.ggobook.domain;
 
 import jakarta.persistence.*;
 import lombok.Getter;

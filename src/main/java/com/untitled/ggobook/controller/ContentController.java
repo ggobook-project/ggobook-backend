@@ -2,6 +2,7 @@ package com.untitled.ggobook.controller;
 
 
 import com.untitled.ggobook.domain.Content;
+import com.untitled.ggobook.dto.ContentDetailDto;
 import com.untitled.ggobook.service.ContentService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Pageable;
@@ -28,8 +29,8 @@ public class ContentController {
     }
 
     @GetMapping("/{contentId}")
-    public Content getContentDetail(@PathVariable Long contentId) {
-        return contentService.getContentDetail(contentId);
+    public ContentDetailDto getContentDetail(@PathVariable Long contentId, Pageable pageable, String currentNeedStatus) {
+        return contentService.getContentDetail(contentId, pageable, currentNeedStatus);
     }
 
     @PostMapping("/")

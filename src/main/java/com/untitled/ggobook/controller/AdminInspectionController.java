@@ -2,6 +2,7 @@ package com.untitled.ggobook.controller;
 
 import com.untitled.ggobook.domain.Episode;
 import com.untitled.ggobook.service.AdminInspectionService;
+import com.untitled.ggobook.service.EpisodeService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -18,6 +19,7 @@ import java.util.Map;
 public class AdminInspectionController {
 
     private final AdminInspectionService adminService;
+    private final EpisodeService episodeService;
 
     // 1. 통합 검수 대기 목록 조회 (모든 신규 작품/회차 목록)
     @GetMapping
@@ -28,7 +30,7 @@ public class AdminInspectionController {
     // 2. 특정 회차 상세 내용 조회 (관리자가 클릭 시 원고 읽기용)
     @GetMapping("/episodes/{episodeId}")
     public ResponseEntity<Episode> getEpisodeDetail(@PathVariable Long episodeId) {
-        return ResponseEntity.ok(adminService.getEpisodeDetail(episodeId));
+        return ResponseEntity.ok(episodeService.getEpisodeDetail(episodeId));
     }
 
     // 3. 회차 승인 처리 (AI 요약 + 작품 승인 연동)
@@ -41,8 +43,8 @@ public class AdminInspectionController {
                 requestData.get("scheduledAt"),
                 DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss")
         );
-
-        adminService.approveEpisode(episodeId, scheduledAt);
+        Episode episode = episodeService.getEpisodeDetail(episodeId);
+        adminService.approveEpisode(episode, scheduledAt);
         return ResponseEntity.ok("성공적으로 승인되었습니다.");
     }
 
@@ -52,8 +54,9 @@ public class AdminInspectionController {
             @PathVariable Long episodeId,
             @RequestBody Map<String, String> requestData) {
 
+        Episode episode = episodeService.getEpisodeDetail(episodeId);
         String rejectReason = requestData.get("rejectReason");
-        adminService.rejectEpisode(episodeId, rejectReason);
+        adminService.rejectEpisode(episode, rejectReason);
         return ResponseEntity.ok("반려 처리가 완료되었습니다.");
     }
 }

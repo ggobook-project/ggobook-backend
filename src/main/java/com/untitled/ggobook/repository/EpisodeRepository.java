@@ -3,6 +3,8 @@ package com.untitled.ggobook.repository;
 import com.untitled.ggobook.domain.Content;
 import com.untitled.ggobook.domain.Episode;
 import com.untitled.ggobook.domain.Status;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Slice;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
@@ -30,4 +32,12 @@ public interface EpisodeRepository extends JpaRepository<Episode, Long> {
             "JOIN FETCH e.content " +
             "WHERE e.episodeId = :episodeId")
     Optional<Episode> findByIdWithDetails(@Param("episodeId") Long episodeId);
+
+
+    @Query("SELECT e FROM Episode e " +
+            "WHERE e.content.contentId = :contentId " +
+            "AND e.status = :currentNeedStatus " +
+            "AND e.scheduledAt > CURRENT_TIMESTAMP " +
+            "ORDER BY e.episodeNumber DESC")
+    Slice<Episode> findEpisodeListByContentId(@Param("contentId")Long contentId, Pageable pageable, String currentNeedStatus);
 }

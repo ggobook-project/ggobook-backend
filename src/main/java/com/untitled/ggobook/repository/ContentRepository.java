@@ -37,4 +37,9 @@ public interface ContentRepository extends JpaRepository<Content, Long> {
 
     // 특정 작가의 작품만 모아보는 기능이 필요할 때 사용합니다.
     List<Content> findByAuthorId(Long authorId);
+
+    @Query("SELECT c FROM Content c " +
+            "LEFT JOIN FETCH c.episodes " +
+            "WHERE c.contentId = :contentId")
+    Optional<Content> findByIdWithEpisodes(@Param("contentId") Long contentId);
 }

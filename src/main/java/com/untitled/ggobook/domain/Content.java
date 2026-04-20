@@ -3,6 +3,7 @@ package com.untitled.ggobook.domain;
 import jakarta.persistence.*;
 import lombok.Data;
 import lombok.ToString;
+import org.springframework.data.domain.Slice;
 
 import java.time.LocalDateTime;
 import java.util.ArrayList;
