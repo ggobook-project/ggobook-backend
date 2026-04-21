@@ -2,6 +2,7 @@ package com.untitled.ggobook.service;
 
 import com.untitled.ggobook.domain.Content;
 import com.untitled.ggobook.domain.Episode;
+import com.untitled.ggobook.domain.enums.Status;
 import com.untitled.ggobook.dto.ContentDetailDto;
 import com.untitled.ggobook.repository.ContentRepository;
 import com.untitled.ggobook.repository.EpisodeRepository;
@@ -12,10 +13,8 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Slice;
 import org.springframework.stereotype.Service;
-import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
-import java.util.List;
 
 // 작품 서비스
 @Service
@@ -34,6 +33,7 @@ public class ContentService {
         return contentRepository.findContentList(searchKeyword, searchGenre, type, pageable);
     }
 
+    @Transactional
     public ContentDetailDto getContentDetail(Long contentId, Pageable pageable, String currentNeedStatus) {
 
         Content content = contentRepository.findById(contentId)
@@ -72,6 +72,8 @@ public class ContentService {
                 content.setThumbnailUrl(fileUtil.uploadToS3(multipartFile));
             }
             contentRepository.save(content);
+        }else{
+            throw new IllegalArgumentException("해당 작품이 없습니다.");
         }
     }
 

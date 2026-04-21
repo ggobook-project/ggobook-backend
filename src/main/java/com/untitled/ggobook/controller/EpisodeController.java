@@ -2,6 +2,7 @@ package com.untitled.ggobook.controller;
 
 import com.untitled.ggobook.domain.Content;
 import com.untitled.ggobook.domain.Episode;
+import com.untitled.ggobook.domain.enums.Status;
 import com.untitled.ggobook.service.ContentService;
 import com.untitled.ggobook.service.EpisodeService;
 import lombok.RequiredArgsConstructor;
@@ -24,7 +25,7 @@ public class EpisodeController {
     public Slice<Episode> getEpisodeList(
             @RequestParam(required = false)Pageable pageable,
             @PathVariable Long contentId,
-            @RequestParam(required = false) String currentNeedStatus
+            String currentNeedStatus
             ){
         return episodeService.getEpisodeList(contentId, pageable, currentNeedStatus);
     }

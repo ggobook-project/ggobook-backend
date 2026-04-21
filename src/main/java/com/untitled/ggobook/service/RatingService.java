@@ -7,6 +7,8 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
+import java.time.LocalDateTime;
+
 // 별점 서비스
 @Service
 @Slf4j
@@ -24,13 +26,14 @@ public class RatingService {
         Rating existing = ratingRepository.findByUserIdAndContent_ContentId(userId, contentId);
         if (existing != null) {
             rating.setRatingId(existing.getRatingId());
+            rating.setUpdatedAt(LocalDateTime.now());
         }
 
         ratingRepository.save(rating);
     }
 
     public double getAverageRating(Long contentId) {
-        return ratingRepository.findAverageByContentId(contentId);
+        return ratingRepository.findAverageByContentId(contentId) != null ? ratingRepository.findAverageByContentId(contentId) : 0.0;
     }
 
 
