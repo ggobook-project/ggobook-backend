@@ -51,6 +51,7 @@ public class AuthService {
         user.setEmail(request.getEmail());
         user.setNickname(request.getNickname());
         user.setRole("USER"); // 기본 권한
+        user.setGender(request.getGender());
 
         userRepository.save(user); // DB에 쏙!
     }
