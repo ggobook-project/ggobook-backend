@@ -1,6 +1,7 @@
 package com.untitled.ggobook.domain;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.untitled.ggobook.domain.enums.Status;
 import jakarta.persistence.*;
 import lombok.Data;
 import lombok.ToString;

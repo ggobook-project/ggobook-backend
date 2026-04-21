@@ -1,7 +1,7 @@
 package com.untitled.ggobook.service;
 
 import com.untitled.ggobook.domain.SignupRequest;
-import com.untitled.ggobook.entity.User;
+import com.untitled.ggobook.domain.User;
 import com.untitled.ggobook.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -51,6 +51,7 @@ public class AuthService {
         user.setEmail(request.getEmail());
         user.setNickname(request.getNickname());
         user.setRole("USER"); // 기본 권한
+        user.setGender(request.getGender());
 
         userRepository.save(user); // DB에 쏙!
     }

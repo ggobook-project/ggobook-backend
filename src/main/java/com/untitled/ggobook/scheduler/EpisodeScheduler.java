@@ -1,7 +1,7 @@
 package com.untitled.ggobook.scheduler;
 
 import com.untitled.ggobook.domain.Episode;
-import com.untitled.ggobook.domain.Status;
+import com.untitled.ggobook.domain.enums.Status;
 import com.untitled.ggobook.repository.EpisodeRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -21,7 +21,7 @@ public class EpisodeScheduler {
 
     // cron: 초 분 시 일 월 요일 (여기서는 "매 1분마다" 실행되도록 설정)
     // 예: "0 0 0 * * *" 라고 쓰면 매일 밤 자정(12시)에만 실행됩니다.
-    @Scheduled(cron = "0 * * * * *")
+    @Scheduled(cron = "0 0 0 * * *")
     @Transactional
     public void publishScheduledEpisodes() {
         LocalDateTime now = LocalDateTime.now();

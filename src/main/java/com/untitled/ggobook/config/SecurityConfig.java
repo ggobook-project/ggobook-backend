@@ -1,5 +1,14 @@
 package com.untitled.ggobook.config;
 
+import org.springframework.security.oauth2.core.endpoint.OAuth2AuthorizationRequest;
+import jakarta.servlet.http.HttpServletRequest;
+import java.util.HashMap;
+import java.util.Map;
+
+import org.springframework.security.oauth2.client.registration.ClientRegistrationRepository;
+import org.springframework.security.oauth2.client.web.DefaultOAuth2AuthorizationRequestResolver;
+import org.springframework.security.oauth2.client.web.OAuth2AuthorizationRequestResolver;
+import com.untitled.ggobook.service.SocialLoginService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -8,8 +17,6 @@ import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
 import org.springframework.security.config.http.SessionCreationPolicy;
-import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
-import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 import org.springframework.web.cors.CorsConfiguration;
@@ -21,14 +28,13 @@ import java.util.List;
 @Configuration
 @EnableWebSecurity
 @RequiredArgsConstructor
+
 public class SecurityConfig {
 
     private final JwtAuthenticationFilter jwtAuthenticationFilter;
-
-    @Bean
-    public PasswordEncoder passwordEncoder() {
-        return new BCryptPasswordEncoder();
-    }
+    private final SocialLoginService socialLoginService;
+    private final OAuth2SuccessHandler oAuth2SuccessHandler;
+    private final ClientRegistrationRepository clientRegistrationRepository;
 
     @Bean
     public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
@@ -41,11 +47,24 @@ public class SecurityConfig {
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
 
                 .authorizeHttpRequests(auth -> auth
-                        .requestMatchers("/", "/index.html", "/api/auth/**").permitAll()
+                        .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
+                        .requestMatchers("/", "/index.html", "/api/auth/**", "/api/contents/**", "/error").permitAll()
                         .requestMatchers("/api/admin/**").hasRole("ADMIN")
+                        // 로그인 구현시 삭제 될 예정. 작품 관련 때문에 추가함. ↓
+                        .requestMatchers(HttpMethod.POST, "/api/contents/**").permitAll()
                         .requestMatchers(HttpMethod.GET, "/api/**").permitAll()
                         .anyRequest().authenticated()
                 )
+                .oauth2Login(oauth2 -> oauth2
+
+                        .authorizationEndpoint(auth -> auth
+                                .authorizationRequestResolver(customAuthorizationRequestResolver())
+                        )
+
+                        .userInfoEndpoint(userInfo -> userInfo.userService(socialLoginService))
+                        .successHandler(oAuth2SuccessHandler)
+                )
+
                 .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class);
 
         return http.build();
@@ -55,13 +74,57 @@ public class SecurityConfig {
     @Bean
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration config = new CorsConfiguration();
-        config.setAllowedOrigins(List.of("http://localhost:5173")); // 리액트(5173) 주소 허용!
-        config.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE", "OPTIONS")); // 모든 통신 방식 허용
+        config.setAllowedOrigins(List.of("http://localhost:5173"));
+        config.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE", "OPTIONS"));
         config.setAllowedHeaders(List.of("*"));
-        config.setAllowCredentials(true); // ★ 핵심: 이걸 true로 해야 HttpOnly 쿠키(Refresh Token)를 주고받을 수 있습니다.
+        config.setAllowCredentials(true);
 
         UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
-        source.registerCorsConfiguration("/**", config); // 모든 API 주소에 이 규칙을 적용
+        source.registerCorsConfiguration("/**", config);
         return source;
+    }
+
+    // 🌟 똑똑한 스마트 문지기: 구글은 구글 명령어를, 네이버는 네이버 명령어를 던집니다.
+    private OAuth2AuthorizationRequestResolver customAuthorizationRequestResolver() {
+        DefaultOAuth2AuthorizationRequestResolver defaultResolver =
+                new DefaultOAuth2AuthorizationRequestResolver(
+                        clientRegistrationRepository, "/oauth2/authorization");
+
+        return new OAuth2AuthorizationRequestResolver() {
+            @Override
+            public OAuth2AuthorizationRequest resolve(HttpServletRequest request) {
+                OAuth2AuthorizationRequest req = defaultResolver.resolve(request);
+                return customizeAuthorizationRequest(req);
+            }
+
+            @Override
+            public OAuth2AuthorizationRequest resolve(HttpServletRequest request, String clientRegistrationId) {
+                OAuth2AuthorizationRequest req = defaultResolver.resolve(request, clientRegistrationId);
+                return customizeAuthorizationRequest(req);
+            }
+
+            private OAuth2AuthorizationRequest customizeAuthorizationRequest(OAuth2AuthorizationRequest req) {
+                if (req == null) {
+                    return null;
+                }
+
+                // 기존 파라미터들을 복사해옵니다.
+                Map<String, Object> extraParams = new HashMap<>(req.getAdditionalParameters());
+
+                // 지금 로그인하려는 곳이 어디인지 확인 (google, naver 등)
+                String registrationId = req.getAttribute("registration_id");
+
+                // 🌟 클린 코드 핵심: 분기 처리를 통해 각 소셜 서버가 알아듣는 정확한 보안 명령을 내립니다.
+                if ("google".equals(registrationId)) {
+                    extraParams.put("prompt", "select_account"); // 구글: 계정 선택창 강제
+                } else if ("naver".equals(registrationId)) {
+                    extraParams.put("auth_type", "reauthenticate"); // 네이버: 재인증 화면 강제
+                }
+
+                return OAuth2AuthorizationRequest.from(req)
+                        .additionalParameters(extraParams)
+                        .build();
+            }
+        };
     }
 }

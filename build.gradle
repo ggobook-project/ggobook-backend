@@ -41,6 +41,20 @@ dependencies {
 	runtimeOnly 'io.jsonwebtoken:jjwt-impl:0.11.5'
 	runtimeOnly 'io.jsonwebtoken:jjwt-jackson:0.11.5'
 	implementation 'com.amazonaws:aws-java-sdk-s3:1.12.744'
+
+
+	// Redis 추가
+	implementation 'org.springframework.boot:spring-boot-starter-data-redis'
+
+	implementation 'org.springframework.boot:spring-boot-starter-mail'
+
+	// 2. [에러 해결용] 메일 봉투 규격을 명시적으로 추가!
+	implementation 'jakarta.mail:jakarta.mail-api:2.1.2'
+	implementation 'org.eclipse.angus:jakarta.mail:2.0.2' // 실제 작동을 도와주는 구현체
+
+
+	// OAuth2 클라이언트 (소셜 로그인 핵심 엔진)
+	implementation 'org.springframework.boot:spring-boot-starter-oauth2-client'
 }
 
 tasks.named('test') {
