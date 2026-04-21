@@ -1,7 +1,7 @@
 package com.untitled.ggobook.scheduler;
 
 import com.untitled.ggobook.domain.Episode;
-import com.untitled.ggobook.domain.Status;
+import com.untitled.ggobook.domain.enums.Status;
 import com.untitled.ggobook.repository.EpisodeRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;

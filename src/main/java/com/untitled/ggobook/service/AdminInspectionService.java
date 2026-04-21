@@ -3,7 +3,7 @@ package com.untitled.ggobook.service;
 import com.untitled.ggobook.domain.Content;
 import com.untitled.ggobook.domain.Episode;
 import com.untitled.ggobook.domain.Notification;
-import com.untitled.ggobook.domain.Status;
+import com.untitled.ggobook.domain.enums.Status;
 import com.untitled.ggobook.repository.EpisodeRepository;
 import com.untitled.ggobook.util.AIRequestUtil;
 import lombok.RequiredArgsConstructor;

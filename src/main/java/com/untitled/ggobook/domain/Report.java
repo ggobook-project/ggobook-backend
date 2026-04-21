@@ -1,46 +1,94 @@
 package com.untitled.ggobook.domain;
 
+import com.untitled.ggobook.domain.enums.ReportReason;
+import com.untitled.ggobook.domain.enums.ReportStatus;
 import jakarta.persistence.*;
-import lombok.Data;
+import lombok.AccessLevel;
+import lombok.Builder;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
 
 import java.time.LocalDateTime;
 
 @Entity
-@Data
 @Table(name = "report")
+@Getter
+// 🌟 무분별한 객체 생성을 막기 위해 기본 생성자는 Protected로 닫아둡니다.
+@NoArgsConstructor(access = AccessLevel.PROTECTED)
 public class Report {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long reportId;
 
-    // 신고한 회원 ID
-    @Column(name = "reporter_id", nullable = false)
-    private Long reporterId;
+    // ==========================================
+    // 🌟 수정 1: 연관관계 매핑 (Reporter & Reported User)
+    // ==========================================
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "reporter_id", nullable = false)
+    private User reporter; // 신고한 회원 (객체로 연결)
 
-    // 신고 대상 ID (content_id, episode_id, comment_id, relay_entry_id 등)
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "reported_user_id", nullable = false)
+    private User reportedUser; // 🚨 신고당한 회원 (정지 대상을 바로 뽑아오기 위해 추가!)
+
+    // ==========================================
+    // 기존의 훌륭한 설계 유지: 무엇을 신고했는가?
+    // ==========================================
     @Column(nullable = false)
     private Long targetId;
 
-    // 신고 대상 타입 (CONTENT / EPISODE / COMMENT / RELAY)
     @Column(nullable = false, length = 20)
     private String targetType;
 
-    // 신고 사유 타입
-    @Column(nullable = false, length = 500)
-    private String reasonType;
+    // ==========================================
+    // 🌟 수정 2: Enum 적용으로 타입 안정성 확보
+    // ==========================================
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false, length = 50)
+    private ReportReason reportReason; // 신고 사유 (스팸, 욕설 등)
 
-    // 처리 상태 (PENDING / PROCESSED / DELETED)
+    @Enumerated(EnumType.STRING)
     @Column(nullable = false, length = 20)
-    private String status = "PENDING";
+    private ReportStatus status = ReportStatus.PENDING; // 기본값: PENDING
 
-    // 처리 사유 (관리자 입력)
     @Column(length = 500)
-    private String processReason;
+    private String processReason; // 관리자 처리 사유
 
-    @Column(nullable = false)
+    // ==========================================
+    // 🌟 수정 3: 시간 데이터 보호 (updatable = false)
+    // ==========================================
+    @Column(nullable = false, updatable = false)
     private LocalDateTime createdAt = LocalDateTime.now();
 
     @Column(nullable = false)
     private LocalDateTime updatedAt = LocalDateTime.now();
+
+
+    // ==========================================
+    // 🌟 수정 4: 상태 변경 비즈니스 메서드 (도메인 주도 설계)
+    // ==========================================
+
+    @Builder
+    public Report(User reporter, User reportedUser, Long targetId, String targetType, ReportReason reportReason) {
+        this.reporter = reporter;
+        this.reportedUser = reportedUser;
+        this.targetId = targetId;
+        this.targetType = targetType;
+        this.reportReason = reportReason;
+    }
+
+    // 관리자가 허위 신고로 판명하여 기각할 때 호출
+    public void rejectReport(String processReason) {
+        this.status = ReportStatus.REJECTED;
+        this.processReason = processReason;
+        this.updatedAt = LocalDateTime.now();
+    }
+
+    // 관리자가 진짜 신고로 인정하여 유저를 정지시킬 때 호출
+    public void resolveReport(String processReason) {
+        this.status = ReportStatus.RESOLVED;
+        this.processReason = processReason;
+        this.updatedAt = LocalDateTime.now();
+    }
 }

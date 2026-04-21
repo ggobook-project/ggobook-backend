@@ -10,9 +10,8 @@ import org.springframework.data.repository.query.Param;
 import java.util.Optional;
 
 // 작품 리포지토리
-import com.untitled.ggobook.domain.Content;
-import com.untitled.ggobook.domain.Status;
-import org.springframework.data.jpa.repository.JpaRepository;
+import com.untitled.ggobook.domain.enums.Status;
+
 import java.util.List;
 
 public interface ContentRepository extends JpaRepository<Content, Long> {
