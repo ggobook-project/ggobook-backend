@@ -2,7 +2,7 @@ package com.untitled.ggobook.repository;
 
 import com.untitled.ggobook.domain.Content;
 import com.untitled.ggobook.domain.Episode;
-import com.untitled.ggobook.domain.Status;
+import com.untitled.ggobook.domain.enums.Status;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Slice;
 import org.springframework.data.jpa.repository.JpaRepository;

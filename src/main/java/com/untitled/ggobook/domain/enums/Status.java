@@ -1,4 +1,4 @@
-package com.untitled.ggobook.domain;
+package com.untitled.ggobook.domain.enums;
 
 public enum Status {
     DRAFT,      // 임시 저장
