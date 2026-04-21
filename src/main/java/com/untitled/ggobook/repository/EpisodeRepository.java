@@ -39,5 +39,8 @@ public interface EpisodeRepository extends JpaRepository<Episode, Long> {
             "AND e.status = :currentNeedStatus " +
             "AND e.scheduledAt > CURRENT_TIMESTAMP " +
             "ORDER BY e.episodeNumber DESC")
-    Slice<Episode> findEpisodeListByContentId(@Param("contentId")Long contentId, Pageable pageable, String currentNeedStatus);
+    Slice<Episode> findEpisodeListByContentId(
+            @Param("contentId")Long contentId,
+            Pageable pageable,
+            @Param("currentNeedStatus") String currentNeedStatus);
 }

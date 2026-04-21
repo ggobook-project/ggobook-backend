@@ -43,10 +43,10 @@ public class ContentController {
     }
 
     @PutMapping("/{contentId}")
-    public void updateContent(@PathVariable Long contentID,
-                              @RequestParam("content") Content content,
-                              @RequestParam("file") MultipartFile multipartFile){
-        content.setContentId(contentID);
+    public void updateContent(@PathVariable Long contentId,
+                              @RequestPart("content") Content content,
+                              @RequestPart("file") MultipartFile multipartFile){
+        content.setContentId(contentId);
         contentService.updateContent(content, multipartFile);
     }
 

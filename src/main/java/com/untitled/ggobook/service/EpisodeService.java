@@ -40,6 +40,7 @@ public class EpisodeService {
         episodeRepository.save(episode);
     }
 
+    @Transactional
     public void updateEpisode(Episode episode, MultipartFile multipartFile){
         if(episodeRepository.existsById(episode.getEpisodeId())){
             if(!multipartFile.isEmpty()){

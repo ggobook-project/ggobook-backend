@@ -39,6 +39,10 @@ public class ContentService {
         Content content = contentRepository.findById(contentId)
                 .orElseThrow(() -> new IllegalArgumentException("작품 없음"));
 
+        content.setViewCount(content.getViewCount() + 1);
+        contentRepository.save(content);
+
+
         Slice<Episode> episodes = episodeRepository.findEpisodeListByContentId(contentId, pageable, currentNeedStatus);
 
         return new ContentDetailDto(
@@ -60,6 +64,7 @@ public class ContentService {
         contentRepository.save(content);
     }
 
+    @Transactional
     public void updateContent(Content content, MultipartFile multipartFile){
         if(contentRepository.existsById(content.getContentId())) {
             if (!multipartFile.isEmpty()) {
