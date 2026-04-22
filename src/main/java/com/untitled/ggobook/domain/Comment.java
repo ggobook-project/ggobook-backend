@@ -49,4 +49,7 @@ public class Comment {
     @ToString.Exclude
     @OneToMany(mappedBy = "comment", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<Reply> replies = new ArrayList<>();
+
+    @Column(nullable = false)
+    private Boolean isDeleted = false; // 기본값은 false(안 지워짐)
 }

@@ -30,4 +30,7 @@ public class Reply {
 
     @Column(nullable = false)
     private LocalDateTime createdAt = LocalDateTime.now();
+
+    @Column(nullable = false)
+    private Boolean isDeleted = false; // 기본값은 false(안 지워짐)
 }
