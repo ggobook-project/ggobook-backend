@@ -25,7 +25,7 @@ public class AdminUploadService {
         // 명세서 메서드명: handleToggleVisibility() 반영
         Episode episode = episodeRepository.findById(episodeId)
                 .orElseThrow(() -> new IllegalArgumentException("회차 없음"));
-        episode.setStatus(episode.getStatus() == Status.APPROVED ? Status.PRIVATE : Status.APPROVED);
+        episode.setStatus(episode.getStatus() == Status.APPROVED ? Status.BLINDED : Status.APPROVED);
     }
 
     @Transactional

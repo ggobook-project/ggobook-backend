@@ -1,35 +1,55 @@
 package com.untitled.ggobook.domain;
 
 import jakarta.persistence.*;
-import lombok.Data;
-
+import lombok.AccessLevel;
+import lombok.Builder;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
 import java.time.LocalDateTime;
 
 @Entity
-@Data
-@Table(name = "notice")
+@Getter
+@NoArgsConstructor(access = AccessLevel.PROTECTED)
+@Table(name = "notices")
 public class Notice {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long noticeId;
 
-    // 작성한 관리자 ID
-    @Column(name = "admin_id", nullable = false)
-    private Long adminId;
-
     @Column(nullable = false, length = 200)
     private String title;
 
-    @Column(columnDefinition = "TEXT", nullable = false)
+    @Column(nullable = false, columnDefinition = "TEXT")
     private String content;
 
-    @Column(nullable = false, length = 500)
-    private String imageUrl;
+    private Long authorId; // 작성 관리자 ID
 
-    @Column(nullable = false)
+    private Long viewCount = 0L;
+
+    // 🌟 [추가] 중요 공지 상단 고정 여부
+    private boolean isPinned = false;
+
     private LocalDateTime createdAt = LocalDateTime.now();
-
-    @Column(nullable = false)
     private LocalDateTime updatedAt = LocalDateTime.now();
+
+    @Builder
+    public Notice(String title, String content, Long authorId, boolean isPinned) {
+        this.title = title;
+        this.content = content;
+        this.authorId = authorId;
+        this.isPinned = isPinned;
+    }
+
+    // 🌟 [비즈니스 메서드] 수정 로직
+    public void update(String title, String content, boolean isPinned) {
+        this.title = title;
+        this.content = content;
+        this.isPinned = isPinned;
+        this.updatedAt = LocalDateTime.now();
+    }
+
+    public void incrementViewCount() {
+        this.viewCount++;
+    }
 }
