@@ -2,6 +2,7 @@ package com.untitled.ggobook.service;
 
 import com.untitled.ggobook.domain.*;
 import com.untitled.ggobook.repository.*;
+import com.untitled.ggobook.util.AIRequestUtil; // 🌟 신규: AI 통신 유틸 추가
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -13,12 +14,14 @@ public class AdminRelayService {
 
     private final RelayNovelRepository relayNovelRepository;
     private final RelayTopicRepository relayTopicRepository;
-    // 🌟 신규: 관리자 공식 주제 리포지토리 추가!
     private final AdminRelayTopicRepository adminRelayTopicRepository;
     private final RelayGuidelineRepository guidelineRepository;
 
-    // --- [1. 가이드라인 관리] --- (변경 없음)
+    // 🌟 신규: 블라인드 처리를 위한 의존성 추가
+    private final RelayEntryRepository relayEntryRepository;
+    private final AIRequestUtil aiRequestUtil;
 
+    // --- [1. 가이드라인 관리] --- (변경 없음)
     @Transactional(readOnly = true)
     public String getRelayGuideline() {
         return guidelineRepository.findById(1L)
@@ -30,14 +33,12 @@ public class AdminRelayService {
     public void updateRelayGuideline(String newContent) {
         RelayGuideline guideline = guidelineRepository.findById(1L)
                 .orElse(new RelayGuideline());
-        // Auto-Increment 충돌을 막기 위해 1번으로 강제 고정!
         guideline.setId(1L);
         guideline.setContent(newContent);
         guidelineRepository.save(guideline);
     }
 
-    // --- [2. 릴레이 소설 및 유저 주제 강제 관리] ---
-
+    // --- [2. 릴레이 소설 및 유저 주제 강제 관리] --- (변경 없음)
     @Transactional(readOnly = true)
     public List<RelayNovel> getRelayNovelList() {
         return relayNovelRepository.findAll();
@@ -51,22 +52,19 @@ public class AdminRelayService {
         relayNovelRepository.deleteById(relayNovelId);
     }
 
-    // (선택) 유저들이 만든 자유 주제를 조회하거나 불량 주제를 지우는 기능 유지
     @Transactional(readOnly = true)
     public List<RelayTopic> getUserTopicList() {
         return relayTopicRepository.findAll();
     }
 
-    // --- [3. 관리자 공식 주제(AdminRelayTopic) 관리] --- (🌟 전면 개편)
-
+    // --- [3. 관리자 공식 주제(AdminRelayTopic) 관리] --- (변경 없음)
     @Transactional(readOnly = true)
     public List<AdminRelayTopic> getAdminTopicList() {
-        return adminRelayTopicRepository.findAll(); // 공식 주제 목록 가져오기
+        return adminRelayTopicRepository.findAll();
     }
 
     @Transactional
     public void registerAdminTopic(String title, String description) {
-        // 기존의 RelayTopic이 아니라 AdminRelayTopic을 생성합니다.
         AdminRelayTopic adminTopic = new AdminRelayTopic();
         adminTopic.setTitle(title);
         adminTopic.setDescription(description);
@@ -76,5 +74,29 @@ public class AdminRelayService {
     @Transactional
     public void deleteAdminTopic(Long adminTopicId) {
         adminRelayTopicRepository.deleteById(adminTopicId);
+    }
+
+    // ==========================================
+    // 🌟 4. [신규 추가] 릴레이 소설 회차 강제 블라인드 (AI 스토리 브릿지)
+    // ==========================================
+    @Transactional
+    public void blindRelayEpisode(Long entryId, String manualSummary) {
+        RelayEntry entry = relayEntryRepository.findById(entryId)
+                .orElseThrow(() -> new IllegalArgumentException("해당 릴레이 회차를 찾을 수 없습니다."));
+
+        String finalSummary;
+
+        // 1. 프론트엔드(관리자)가 직접 요약본을 적어 보냈다면 그것을 최우선 사용!
+        if (manualSummary != null && !manualSummary.trim().isEmpty()) {
+            finalSummary = manualSummary;
+        }
+        // 2. 안 적어 보냈다면 AI 전령(AIRequestUtil) 출동!
+        else {
+            // 🌟 복잡한 프롬프트 문자열 싹 지우고, 원문만 깔끔하게 넘깁니다!
+            finalSummary = aiRequestUtil.requestRelaySummary(entry.getEntryText());
+        }
+
+        // 3. 상태 변경 및 요약본 저장
+        entry.blind("[블라인드 요약]\n" + finalSummary);
     }
 }

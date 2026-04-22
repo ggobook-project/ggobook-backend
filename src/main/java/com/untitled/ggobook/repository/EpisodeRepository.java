@@ -42,5 +42,9 @@ public interface EpisodeRepository extends JpaRepository<Episode, Long> {
     Slice<Episode> findEpisodeListByContentId(
             @Param("contentId")Long contentId,
             Pageable pageable,
-            String currentNeedStatus);
+            @Param("currentNeedStatus") String currentNeedStatus);
+
+    // 예약 업로드 스케줄러에서 사용 (승인되었으나 아직 발행 전인 목록)
+    @Query("SELECT e FROM Episode e WHERE e.status = 'APPROVED' AND e.scheduledAt <= CURRENT_TIMESTAMP")
+    List<Episode> findPendingPublishing();
 }

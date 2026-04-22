@@ -1,23 +1,25 @@
 package com.untitled.ggobook.domain;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.untitled.ggobook.domain.enums.Status;
 import jakarta.persistence.*;
-import lombok.Data;
-import lombok.ToString;
+import lombok.*;
 
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 
 @Entity
-@Data
+@Getter
+@Setter
+@NoArgsConstructor(access = AccessLevel.PROTECTED)
 public class Episode {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long episodeId;
 
-    @JsonIgnore
+    @JsonIgnoreProperties("episodes")
     @ToString.Exclude
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "content_id")
@@ -25,8 +27,10 @@ public class Episode {
 
     private Integer episodeNumber;
     private String episodeTitle;
+
     @Column(columnDefinition = "TEXT")
     private String aiSummary;
+
     private String thumbnailUrl;
     private Boolean isFree = true;
 
@@ -38,7 +42,6 @@ public class Episode {
     private LocalDateTime scheduledAt;
     private LocalDateTime createdAt = LocalDateTime.now();
 
-    // 양방향 설정
     @ToString.Exclude
     @OneToOne(mappedBy = "episode", cascade = CascadeType.ALL)
     private Novel novel;
@@ -47,18 +50,31 @@ public class Episode {
     @OneToMany(mappedBy = "episode", cascade = CascadeType.ALL)
     private List<ComicToon> comicToons = new ArrayList<>();
 
-    // AI 추출 메서드 (캡슐화 완벽 적용)
+    // 🌟 상태 변경 도메인 로직 (Service에서 호출)
+    public void blind(String reason) {
+        this.status = Status.BLINDED;
+        this.rejectReason = reason; // 관리자 메모용으로 재활용
+    }
+
     public String getExtractableTextForAI() {
         if (this.content == null || this.content.getType() == null) {
             return null;
         }
 
-        String type = this.content.getType();
-
-        if ("NOVEL".equalsIgnoreCase(type) && this.novel != null) {
+        if ("NOVEL".equalsIgnoreCase(this.content.getType()) && this.novel != null) {
             return this.novel.getContentText();
         }
-        // ✅ 웹툰("COMIC")이거나 그 외의 경우 요약할 텍스트가 없다고 명시적으로 null을 반환합니다.
         return null;
+    }
+
+    public void approve(LocalDateTime scheduledAt, String aiSummary) {
+        this.status = Status.APPROVED;
+        this.scheduledAt = scheduledAt;
+        this.aiSummary = aiSummary;
+    }
+
+    public void reject(String reason) {
+        this.status = Status.REJECTED;
+        this.rejectReason = reason;
     }
 }

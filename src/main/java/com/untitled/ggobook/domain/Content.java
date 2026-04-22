@@ -2,23 +2,25 @@ package com.untitled.ggobook.domain;
 
 import com.untitled.ggobook.domain.enums.Status;
 import jakarta.persistence.*;
-import lombok.Data;
-import lombok.ToString;
+import lombok.*;
 
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 
-// 작품 도메인
 @Entity
-@Data
+@Getter
+@Setter
+@NoArgsConstructor(access = AccessLevel.PROTECTED) // 🌟 안전한 객체 생성
 public class Content {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long contentId;
 
     private Long authorId;
+
     private String type;
+
     private String title;
     private String summary;
 
@@ -35,12 +37,9 @@ public class Content {
     private Long viewCount = 0L;
     private Integer likeCount = 0;
     private Double rating = 0.0;
-
     private String rejectReason;
-
     private LocalDateTime createdAt = LocalDateTime.now();
 
-    // 양방향 관계 설정 및 무한 루프 방지
     @ToString.Exclude
     @OneToMany(mappedBy = "content", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<Episode> episodes = new ArrayList<>();
@@ -52,4 +51,13 @@ public class Content {
     @ToString.Exclude
     @OneToMany(mappedBy = "content", cascade = CascadeType.ALL)
     private List<Rating> ratings = new ArrayList<>();
+
+    public void approve() {
+        this.status = Status.APPROVED;
+    }
+
+    public void reject(String reason) {
+        this.status = Status.REJECTED;
+        this.rejectReason = reason;
+    }
 }

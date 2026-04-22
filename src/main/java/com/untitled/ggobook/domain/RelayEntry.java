@@ -1,14 +1,18 @@
 package com.untitled.ggobook.domain;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.untitled.ggobook.domain.enums.Status;
 import jakarta.persistence.*;
-import lombok.Data;
+import lombok.AccessLevel;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
 import lombok.ToString;
 
 import java.time.LocalDateTime;
 
 @Entity
-@Data
+@Getter
+@NoArgsConstructor(access = AccessLevel.PROTECTED)
 @Table(name = "relay_entry")
 public class RelayEntry {
 
@@ -28,15 +32,29 @@ public class RelayEntry {
     @Column(columnDefinition = "TEXT", nullable = false)
     private String entryText;
 
+    // 🌟 [추가] 관리자 메시지 (AI 요약본 저장용)
+    @Column(columnDefinition = "TEXT")
+    private String adminMessage;
+
+    // 🌟 [추가] 회차 상태
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false, length = 20)
+    private Status status = Status.PUBLISHED;
+
     @Column(nullable = false)
     private Integer entryOrder;
 
     @Column(nullable = false)
     private LocalDateTime createdAt = LocalDateTime.now();
 
-    // 엔티티가 DB에 처음 저장되기 직전에 실행
     @PrePersist
     public void prePersist() {
         this.createdAt = LocalDateTime.now();
+    }
+
+    // 🌟 [추가] 릴레이 블라인드 처리 로직 (상태 변경 및 요약본 삽입)
+    public void blind(String safeSummary) {
+        this.status = Status.BLINDED;
+        this.adminMessage = safeSummary;
     }
 }

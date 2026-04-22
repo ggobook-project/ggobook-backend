@@ -65,4 +65,17 @@ public class AdminInspectionController {
         adminService.rejectEpisode(episodeId, rejectReason);
         return ResponseEntity.ok("반려 처리가 완료되었습니다.");
     }
+
+    // ==========================================
+    //  5. [추가] 일반 작품 회차 블라인드 API
+    // ==========================================
+    @PostMapping("/episodes/{episodeId}/blind")
+    public ResponseEntity<String> blindContent(
+            @PathVariable Long episodeId,
+            @RequestBody Map<String, String> requestData) {
+
+        String reason = requestData.get("reason");
+        adminService.blindContent(episodeId, reason);
+        return ResponseEntity.ok("작품 회차가 강제 블라인드 처리되었습니다.");
+    }
 }

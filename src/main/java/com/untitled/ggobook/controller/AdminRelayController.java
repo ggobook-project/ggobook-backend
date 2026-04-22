@@ -10,6 +10,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
+import java.util.Map;
 
 @RestController
 @RequestMapping("/api/admin")
@@ -97,6 +98,20 @@ public class AdminRelayController {
     public ResponseEntity<Void> deleteAdminTopic(@PathVariable Long adminTopicId) {
         adminRelayService.deleteAdminTopic(adminTopicId);
         return ResponseEntity.noContent().build();
+    }
+
+    // ==========================================
+    // 릴레이 회차 강제 블라인드 API
+    // ==========================================
+    @PostMapping("/api/admin/relay/{entryId}/blind")
+    public ResponseEntity<?> blindRelay(@PathVariable Long entryId, @RequestBody Map<String, String> request) {
+        String manualSummary = request.get("manualSummary");
+
+        // 🌟 여기가 중요합니다!
+        // 서비스 메서드 이름과 파라미터 순서/개수가 일치해야 합니다.
+        adminRelayService.blindRelayEpisode(entryId, manualSummary);
+
+        return ResponseEntity.ok().build();
     }
 
     // ==========================================
