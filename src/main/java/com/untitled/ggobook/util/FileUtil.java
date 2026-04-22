@@ -72,11 +72,6 @@ public class FileUtil {
         if (multipartFile.isEmpty()) {
             throw new IllegalArgumentException("파일이 비어있습니다.");
         }
-
-        if (multipartFile.getSize() > 10 * 1024 * 1024) { // 10MB 제한
-            throw new IllegalArgumentException("파일 용량은 10MB를 초과할 수 없습니다.");
-        }
-
         String originalFilename = multipartFile.getOriginalFilename();
         String extension = originalFilename.substring(originalFilename.lastIndexOf(".") + 1).toLowerCase();
         if (!ALLOWED_EXTENSIONS.contains(extension)) {

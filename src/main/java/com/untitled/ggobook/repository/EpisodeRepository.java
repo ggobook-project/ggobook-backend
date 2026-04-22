@@ -36,8 +36,8 @@ public interface EpisodeRepository extends JpaRepository<Episode, Long> {
 
     @Query("SELECT e FROM Episode e " +
             "WHERE e.content.contentId = :contentId " +
-            "AND e.status = :currentNeedStatus " +
-            "AND e.scheduledAt <= CURRENT_TIMESTAMP " +
+//            "AND e.status = :currentNeedStatus " +
+//            "AND e.scheduledAt <= CURRENT_TIMESTAMP " +
             "ORDER BY e.episodeNumber DESC")
     Slice<Episode> findEpisodeListByContentId(
             @Param("contentId")Long contentId,

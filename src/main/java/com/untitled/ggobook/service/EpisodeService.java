@@ -49,7 +49,6 @@ public class EpisodeService {
         Episode savedEpisode = episodeRepository.save(episode);
 
         if(novel != null){
-            novel.setEpisodeId(savedEpisode.getEpisodeId());
             novel.setEpisode(savedEpisode);
             novelRepository.save(novel);
         }else{
