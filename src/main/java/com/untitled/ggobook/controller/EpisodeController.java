@@ -1,7 +1,10 @@
 package com.untitled.ggobook.controller;
 
+import com.untitled.ggobook.domain.ComicToon;
 import com.untitled.ggobook.domain.Content;
 import com.untitled.ggobook.domain.Episode;
+import com.untitled.ggobook.domain.Novel;
+import com.untitled.ggobook.domain.enums.Status;
 import com.untitled.ggobook.service.ContentService;
 import com.untitled.ggobook.service.EpisodeService;
 import lombok.RequiredArgsConstructor;
@@ -10,6 +13,8 @@ import org.springframework.data.domain.Slice;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
+
+import java.util.List;
 
 // 회차 컨트롤러
 @RestController
@@ -24,7 +29,7 @@ public class EpisodeController {
     public Slice<Episode> getEpisodeList(
             @RequestParam(required = false)Pageable pageable,
             @PathVariable Long contentId,
-            @RequestParam(required = false) String currentNeedStatus
+            String currentNeedStatus
             ){
         return episodeService.getEpisodeList(contentId, pageable, currentNeedStatus);
     }
@@ -38,10 +43,12 @@ public class EpisodeController {
     public ResponseEntity<String> registerEpisode(
             @PathVariable Long contentId,
             @RequestPart("episode") Episode episode,
-            @RequestPart("file") MultipartFile multipartFile
+            @RequestPart(value = "novel", required = false) Novel novel,
+            @RequestPart(value = "thumbFile", required = false) MultipartFile thumbFile,
+            @RequestPart(value = "episodeFiles", required = false) List<MultipartFile> episodeFiles
     ){
         Content content = contentService.getContentByContentID(contentId);
-        episodeService.registerEpisode(content, episode, multipartFile);
+        episodeService.registerEpisode(content, episode, novel, thumbFile, episodeFiles);
 
         return ResponseEntity.ok("회차 업로드 성공");
     }
@@ -49,10 +56,12 @@ public class EpisodeController {
     @PatchMapping("/episodes/{episodeId}")
     public void updateEpisode(
             @PathVariable Long episodeId,
-            @RequestParam("episode") Episode episode,
-            @RequestPart("file") MultipartFile multipartFile){
+            @RequestPart("episode") Episode episode,
+            @RequestPart(value = "novel", required = false) Novel novel,
+            @RequestPart(value = "thumbFile", required = false) MultipartFile thumbFile,
+            @RequestPart(value = "episodeFiles", required = false) List<MultipartFile> episodeFiles) {
         episode.setEpisodeId(episodeId);
-        episodeService.updateEpisode(episode, multipartFile);
+        episodeService.updateEpisode(episode, novel, thumbFile, episodeFiles);
     }
 
     @DeleteMapping("/episodes/{episodeId}")

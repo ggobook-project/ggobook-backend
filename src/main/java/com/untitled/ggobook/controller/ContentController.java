@@ -2,6 +2,7 @@ package com.untitled.ggobook.controller;
 
 
 import com.untitled.ggobook.domain.Content;
+import com.untitled.ggobook.domain.enums.Status;
 import com.untitled.ggobook.dto.ContentDetailDto;
 import com.untitled.ggobook.service.ContentService;
 import lombok.RequiredArgsConstructor;

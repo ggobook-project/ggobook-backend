@@ -18,7 +18,7 @@ public class RatingController {
     public ResponseEntity<String> submitRating(
             @RequestParam("userId") Long userId,
             @PathVariable Long contentId,
-            Rating rating
+            @RequestBody Rating rating
     ) {
 
         ratingService.submitRating(userId, contentId, rating);
