@@ -19,20 +19,20 @@ public class PaymentController {
 
     private final PaymentService paymentService;
 
-    @PostMapping("/prepare")
-    public Payment preparePayment(
-            @RequestParam("id") Long id,
-            @RequestParam Integer amount
-    ) {
-        return paymentService.preparePayment();
-    }
-
-    @PostMapping("/charge")
-    public Payment chargePoint(
-            @AuthenticationPrincipal Long userId,
-            @RequestParam Integer amount
-    ){
-
-        return paymentService.chargePoint(userId, amount);
-    }
+//    @PostMapping("/prepare")
+//    public Payment preparePayment(
+//            @RequestParam("id") Long id,
+//            @RequestParam Integer amount
+//    ) {
+//        return paymentService.preparePayment();
+//    }
+//
+//    @PostMapping("/charge")
+//    public Payment chargePoint(
+//            @AuthenticationPrincipal Long userId,
+//            @RequestParam Integer amount
+//    ){
+//
+//        return paymentService.chargePoint(userId, amount);
+//    }
 }
