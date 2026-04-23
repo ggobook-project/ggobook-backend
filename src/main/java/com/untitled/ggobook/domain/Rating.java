@@ -12,7 +12,7 @@ import java.time.LocalDateTime;
         uniqueConstraints = {
                 @UniqueConstraint(
                         name = "uk_user_content_rating",
-                        columnNames = {"user_id", "content_id"}
+                        columnNames = {"id", "content_id"}
                 )
         }
 )
@@ -21,8 +21,8 @@ public class Rating {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long ratingId;
 
-    @Column(name = "user_id")
-    private Long userId;
+    @Column(name = "id")
+    private Long id;
 
     @ToString.Exclude
     @ManyToOne(fetch = FetchType.LAZY)

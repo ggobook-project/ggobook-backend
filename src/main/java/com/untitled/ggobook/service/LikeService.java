@@ -2,15 +2,17 @@ package com.untitled.ggobook.service;
 
 import com.untitled.ggobook.domain.Content;
 import com.untitled.ggobook.domain.Likes;
+import com.untitled.ggobook.domain.User;
 import com.untitled.ggobook.dto.LikedContentDto;
 import com.untitled.ggobook.repository.ContentRepository;
 import com.untitled.ggobook.repository.LikeRepository;
-// 🌟 팩트: 더 이상 유저 DB 조회가 필요 없으므로 UserRepository import 완전 삭제!
+import com.untitled.ggobook.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Slice;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional; //  추가
 import org.springframework.transaction.annotation.Transactional;
 
 @Service

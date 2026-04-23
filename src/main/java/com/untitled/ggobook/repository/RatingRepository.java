@@ -11,6 +11,6 @@ public interface RatingRepository extends JpaRepository<Rating, Long> {
     Double findAverageByContentId(@Param("contentId") Long contentId);
 
 
-    Rating findByUserIdAndContent_ContentId(Long userId, Long contentId);
+    Rating findByIdAndContent_ContentId(Long id, Long contentId);
 
 }
