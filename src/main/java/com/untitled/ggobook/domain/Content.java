@@ -1,5 +1,6 @@
 package com.untitled.ggobook.domain;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.untitled.ggobook.domain.enums.Status;
 import jakarta.persistence.*;
 import lombok.*;
@@ -44,14 +45,17 @@ public class Content {
 
     @ToString.Exclude
     @OneToMany(mappedBy = "content", cascade = CascadeType.ALL, orphanRemoval = true)
+    @JsonIgnore
     private List<Episode> episodes = new ArrayList<>();
 
     @ToString.Exclude
     @OneToMany(mappedBy = "content", cascade = CascadeType.ALL)
+    @JsonIgnore
     private List<ContentTag> tags = new ArrayList<>();
 
     @ToString.Exclude
     @OneToMany(mappedBy = "content", cascade = CascadeType.ALL)
+    @JsonIgnore
     private List<Rating> ratings = new ArrayList<>();
 
     public void approve() {

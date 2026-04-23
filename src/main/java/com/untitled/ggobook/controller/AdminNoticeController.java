@@ -25,7 +25,7 @@ public class AdminNoticeController {
 
     @PostMapping
     public ResponseEntity<Void> registerNotice(@RequestBody NoticeRequest request) {
-        Long adminId = 1L; // 추후 시큐리티 적용
+        Long adminId = 6L; // 추후 시큐리티 적용
         adminNoticeService.registerNotice(request.getTitle(), request.getContent(), request.isPinned(), adminId);
         return ResponseEntity.ok().build();
     }

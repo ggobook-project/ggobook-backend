@@ -115,10 +115,9 @@ public class MyPageService {
         return likesSlice.map(like -> {
             Content content = like.getContent();
 
-            // 🌟 대기업 클린 코드: DB에 작가 번호(authorId)가 NULL로 들어있을 때의 에러를 원천 차단!
             String authorName = "알 수 없는 작가";
-            if (content.getAuthorId() != null) {
-                authorName = userRepository.findById(content.getAuthorId())
+            if (content.getAuthor() != null) {
+                authorName = userRepository.findById(content.getAuthor().getId())
                         .map(User::getNickname)
                         .orElse("알 수 없는 작가");
             }
