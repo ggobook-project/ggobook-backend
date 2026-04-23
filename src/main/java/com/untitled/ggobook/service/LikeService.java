@@ -2,17 +2,16 @@ package com.untitled.ggobook.service;
 
 import com.untitled.ggobook.domain.Content;
 import com.untitled.ggobook.domain.Likes;
-import com.untitled.ggobook.domain.User;
+import com.untitled.ggobook.domain.User; // 🌟 추가
 import com.untitled.ggobook.dto.LikedContentDto;
 import com.untitled.ggobook.repository.ContentRepository;
 import com.untitled.ggobook.repository.LikeRepository;
-import com.untitled.ggobook.repository.UserRepository;
+import com.untitled.ggobook.repository.UserRepository; // 🌟 작가 이름 찾기 위해 부활!
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Slice;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional; //  추가
 import org.springframework.transaction.annotation.Transactional;
 
 @Service
@@ -22,13 +21,10 @@ public class LikeService {
 
     private final LikeRepository likeRepository;
     private final ContentRepository contentRepository;
+    private final UserRepository userRepository; // 🌟 의존성 주입 복구
 
     @Transactional
     public void toggleLike(Long id, Long contentId) {
-
-        // 유저 찾기(userRepository.findByUserId) 삭제 완료! 쿼리 1번 절약.
-
-        //  컨트롤러에서 바로 넘어온 PK(id)를 다이렉트로 사용합니다.
         Likes existing = likeRepository.findByUserIdAndContent_ContentId(id, contentId);
         Content content = contentRepository.findById(contentId)
                 .orElseThrow(() -> new IllegalArgumentException("작품 없음"));
@@ -39,7 +35,7 @@ public class LikeService {
         } else {
             Likes likes = new Likes();
             likes.setContent(content);
-            likes.setUserId(id); // 🌟 PK(id) 바로 꽂아 넣기
+            likes.setUserId(id);
             likeRepository.save(likes);
             content.setLikeCount(content.getLikeCount() + 1);
         }
@@ -47,11 +43,19 @@ public class LikeService {
 
     @Transactional(readOnly = true)
     public Slice<LikedContentDto> getLikedContentList(Long id, Pageable pageable) {
-
-
-        //  PK(id)를 가지고 찜 창고(LikeRepository)에 바로 요청합니다.
         Slice<Likes> likesSlice = likeRepository.findByUserId(id, pageable);
 
-        return likesSlice.map(like -> LikedContentDto.from(like.getContent()));
+        // 🌟 팩트: DTO가 이제 (Content, 작가이름) 2개를 원하므로, 유저 창고에서 찾아와서 넣어줍니다.
+        return likesSlice.map(like -> {
+            Content content = like.getContent();
+
+            // 번호표(authorId)로 진짜 닉네임 찾아오기
+            String authorName = userRepository.findById(content.getAuthor().getId())
+                    .map(User::getNickname)
+                    .orElse("알 수 없는 작가");
+
+            // 두 개를 같이 던져줌!
+            return LikedContentDto.from(content, authorName);
+        });
     }
 }

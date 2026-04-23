@@ -75,32 +75,56 @@ public class MyPageService {
 
     // 2. 내 정보 수정 (닉네임, 비밀번호)
     @Transactional
-    public void updateMyInfo(Long id, UpdateMyInfoRequest request) { // 🌟 Long id 사용
+    public void updateMyInfo(Long id, UpdateMyInfoRequest request) {
 
         // 🌟 PK로 초고속 조회
         User user = userRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("회원 정보를 찾을 수 없습니다."));
+                .orElseThrow(() -> new IllegalArgumentException("회원 정보를 찾을 수 없습니다."));
 
+        // [1] 닉네임 변경 (기존 로직 유지)
         if (request.getNickname() != null && !request.getNickname().equals(user.getNickname())) {
             if (userRepository.existsByNickname(request.getNickname())) {
-                throw new RuntimeException("이미 사용 중인 닉네임입니다.");
+                throw new IllegalArgumentException("이미 사용 중인 닉네임입니다.");
             }
             user.setNickname(request.getNickname());
         }
 
-        if (request.getPassword() != null && !request.getPassword().trim().isEmpty()) {
-            user.setPassword(passwordEncoder.encode(request.getPassword()));
+        // 🌟 [2] 비밀번호 변경 방어 로직 (핵심 수정 구역)
+        // 유저가 '새 비밀번호'를 입력해서 보냈다면?
+        if (request.getNewPassword() != null && !request.getNewPassword().trim().isEmpty()) {
+
+            // 팩트 폭격: 현재 비밀번호를 안 보냈거나, DB의 진짜 비밀번호와 일치하지 않으면 강제로 에러를 터뜨림!
+            if (request.getCurrentPassword() == null ||
+                    !passwordEncoder.matches(request.getCurrentPassword(), user.getPassword())) {
+
+                // 여기서 에러를 던져야 프론트엔드의 catch(error) 블록으로 빠져서 에러 알람창이 뜹니다.
+                throw new IllegalArgumentException("현재 비밀번호가 일치하지 않습니다.");
+            }
+
+            // 위 검문소를 무사히 통과했을 때만, 새 비밀번호를 암호화해서 DB에 덮어씌웁니다.
+            user.setPassword(passwordEncoder.encode(request.getNewPassword()));
         }
     }
 
     // 3. 나의 찜 목록 조회
     @Transactional(readOnly = true)
-    public Slice<LikedContentDto> getMyLikedContents(Long id, Pageable pageable) { // 🌟 Long id 사용
+    public Slice<LikedContentDto> getMyLikedContents(Long id, Pageable pageable) {
 
-        // 🌟 팩트: 유저 엔티티(User)가 필요 없으므로 userRepository 조회 완전히 삭제! (쿼리 절약)
         Slice<Likes> likesSlice = likeRepository.findByUserId(id, pageable);
 
-        return likesSlice.map(like -> LikedContentDto.from(like.getContent()));
+        return likesSlice.map(like -> {
+            Content content = like.getContent();
+
+            // 🌟 대기업 클린 코드: DB에 작가 번호(authorId)가 NULL로 들어있을 때의 에러를 원천 차단!
+            String authorName = "알 수 없는 작가";
+            if (content.getAuthorId() != null) {
+                authorName = userRepository.findById(content.getAuthorId())
+                        .map(User::getNickname)
+                        .orElse("알 수 없는 작가");
+            }
+
+            return LikedContentDto.from(content, authorName);
+        });
     }
 
     // 4. 내가 작성한 부모 댓글 + 자식 답글 통합 조회
