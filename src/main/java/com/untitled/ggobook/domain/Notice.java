@@ -23,7 +23,7 @@ public class Notice {
     @Column(nullable = false, columnDefinition = "TEXT")
     private String content;
 
-    private Long authorId; // 작성 관리자 ID
+    private Long adminId; // 작성 관리자 ID
 
     private Long viewCount = 0L;
 
@@ -34,10 +34,10 @@ public class Notice {
     private LocalDateTime updatedAt = LocalDateTime.now();
 
     @Builder
-    public Notice(String title, String content, Long authorId, boolean isPinned) {
+    public Notice(String title, String content, Long adminId, boolean isPinned) {
         this.title = title;
         this.content = content;
-        this.authorId = authorId;
+        this.adminId = adminId;
         this.isPinned = isPinned;
     }
 
