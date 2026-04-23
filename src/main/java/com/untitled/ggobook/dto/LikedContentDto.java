@@ -9,18 +9,20 @@ import lombok.Getter;
 public class LikedContentDto {
     private Long contentId;
     private String title;
-    private String type;           // 웹툰, 소설 구분
+    private String author;         // 작가명
+    private String type;
+    private String status;         // 완결/연재중
     private String thumbnailUrl;
-    private Double rating;         // 별점 표시용
 
-    // Entity를 DTO로 변환하는 정적 팩토리 메서드
-    public static LikedContentDto from(Content content) {
+    // 🌟 팩트: 파라미터에 'String authorName'을 추가해서 외부에서 이름을 꽂아주도록 변경!
+    public static LikedContentDto from(Content content, String authorName) {
         return LikedContentDto.builder()
                 .contentId(content.getContentId())
                 .title(content.getTitle())
+                .author(authorName) // 🌟 찾아온 진짜 이름 주입
                 .type(content.getType())
+                .status(content.getStatus().name()) // 🌟 Enum -> String 변환 (핵심!)
                 .thumbnailUrl(content.getThumbnailUrl())
-                .rating(content.getRating())
                 .build();
     }
 }

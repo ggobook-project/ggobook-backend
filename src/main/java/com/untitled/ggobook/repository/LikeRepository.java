@@ -11,6 +11,7 @@ public interface LikeRepository extends JpaRepository<Likes, Long> {
 
     Likes findByUserIdAndContent_ContentId(Long userId, Long contentId);
 
-    @Query("SELECT l FROM Likes l WHERE l.userId = :userId")
+    //  JOIN FETCH l.content 한 단어만 추가하면, 찜을 가져올 때 작품 정보까지 한 방에 다 퍼옵니다! 쿼리가 11번에서 1번으로 줄어듭니다.
+    @Query("SELECT l FROM Likes l JOIN FETCH l.content WHERE l.userId = :userId")
     Slice<Likes> findByUserId(@Param("userId") Long userId, Pageable pageable);
 }
