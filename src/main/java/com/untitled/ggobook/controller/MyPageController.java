@@ -24,44 +24,44 @@ public class MyPageController {
 
     // 1. 내 정보 및 작성 글 목록 조회
     @GetMapping
-    public ResponseEntity<MyProfileResponse> getMyInfo(@AuthenticationPrincipal String userId) {
-        MyProfileResponse response = myPageService.getMyProfile(userId);
+    public ResponseEntity<MyProfileResponse> getMyInfo(@AuthenticationPrincipal Long id) { // 🌟 Long id
+        MyProfileResponse response = myPageService.getMyProfile(id);
         return ResponseEntity.ok(response);
     }
 
     // 2. 내 정보 수정
     @PutMapping
     public ResponseEntity<String> updateMyInfo(
-            @AuthenticationPrincipal String userId,
+            @AuthenticationPrincipal Long id, // 🌟 Long id
             @RequestBody UpdateMyInfoRequest request) {
-        myPageService.updateMyInfo(userId, request);
+        myPageService.updateMyInfo(id, request);
         return ResponseEntity.ok("회원 정보가 성공적으로 수정되었습니다.");
     }
 
     // 3. 나의 찜 목록 조회 API
     @GetMapping("/likes")
     public ResponseEntity<Slice<LikedContentDto>> getMyLikes(
-            @AuthenticationPrincipal String userId,
+            @AuthenticationPrincipal Long id, // 🌟 Long id
             Pageable pageable) {
-        Slice<LikedContentDto> response = myPageService.getMyLikedContents(userId, pageable);
+        Slice<LikedContentDto> response = myPageService.getMyLikedContents(id, pageable);
         return ResponseEntity.ok(response);
     }
 
     // 4. 내가 작성한 댓글/답글 통합 조회 API
     @GetMapping("/comments")
     public ResponseEntity<List<MyActivityDto>> getMyComments(
-            @AuthenticationPrincipal String userId,
+            @AuthenticationPrincipal Long id, // 🌟 Long id
             Pageable pageable) {
-        List<MyActivityDto> response = myPageService.getMyAllCommentsAndReplies(userId, pageable);
+        List<MyActivityDto> response = myPageService.getMyAllCommentsAndReplies(id, pageable);
         return ResponseEntity.ok(response);
     }
 
     // 5. 내 포인트 통합 조회 API
     @GetMapping("/points")
     public ResponseEntity<MyPointResponseDto> getMyPoints(
-            @AuthenticationPrincipal String userId,
+            @AuthenticationPrincipal Long id, // 🌟 Long id
             Pageable pageable) {
-        MyPointResponseDto response = myPageService.getMyPoints(userId, pageable);
+        MyPointResponseDto response = myPageService.getMyPoints(id, pageable);
         return ResponseEntity.ok(response);
     }
 }

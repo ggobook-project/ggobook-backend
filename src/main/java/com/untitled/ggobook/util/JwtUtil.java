@@ -23,22 +23,25 @@ public class JwtUtil {
         this.key = Keys.hmacShaKeyFor(secretKey.getBytes());
     }
 
-    // 1. Access Token 발급 (기존과 동일, 수명만 15분)
-    public String generateAccessToken(String userId, String role) {
-        return createToken(userId, role, accessTokenExpTime);
+    // 1. Access Token 발급 (String userId 제거, Long id 사용)
+    public String generateAccessToken(Long id, String role) {
+        return createToken(id, role, accessTokenExpTime);
     }
 
-    // 2. 🌟 새로 추가됨: Refresh Token 발급 (수명 7일)
-    public String generateRefreshToken(String userId, String role) {
-        return createToken(userId, role, refreshTokenExpTime);
+    // 2. Refresh Token 발급 (String userId 제거, Long id 사용)
+    public String generateRefreshToken(Long id, String role) {
+        return createToken(id, role, refreshTokenExpTime);
     }
 
-    // 토큰 생성 중복 코드 제거 (Clean Code)
-    private String createToken(String userId, String role, long expireTime) {
-        Claims claims = Jwts.claims().setSubject(userId);
+    // 토큰 생성 코드 (PK와 Role만 구워 넣기)
+    private String createToken(Long id, String role, long expireTime) {
+        Claims claims = Jwts.claims();
+        claims.put("id", id);
         claims.put("role", role);
+
         Date now = new Date();
         Date validity = new Date(now.getTime() + expireTime);
+
         return Jwts.builder()
                 .setClaims(claims)
                 .setIssuedAt(now)
@@ -47,10 +50,12 @@ public class JwtUtil {
                 .compact();
     }
 
-    public String getUserIdFromToken(String token) {
-        return Jwts.parserBuilder().setSigningKey(key).build().parseClaimsJws(token).getBody().getSubject();
+    // 토큰에서 PK(Long)를 꺼내는 메서드
+    public Long getIdFromToken(String token) {
+        return Jwts.parserBuilder().setSigningKey(key).build().parseClaimsJws(token).getBody().get("id", Long.class);
     }
 
+    // 토큰에서 Role(String)을 꺼내는 메서드
     public String getRoleFromToken(String token) {
         return Jwts.parserBuilder().setSigningKey(key).build().parseClaimsJws(token).getBody().get("role", String.class);
     }
@@ -60,7 +65,7 @@ public class JwtUtil {
             Jwts.parserBuilder().setSigningKey(key).build().parseClaimsJws(token);
             return true;
         } catch (Exception e) {
-            return false; // 만료되거나 위조되면 false 반환
+            return false;
         }
     }
 }
