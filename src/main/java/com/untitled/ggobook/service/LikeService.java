@@ -12,6 +12,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Slice;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional; //  추가
 import org.springframework.transaction.annotation.Transactional;
 
 @Service
@@ -21,17 +22,14 @@ public class LikeService {
 
     private final LikeRepository likeRepository;
     private final ContentRepository contentRepository;
-    private final UserRepository userRepository; //  토큰 아이디로 유저를 찾기 위해 추가
 
-    @Transactional //  JPA  체킹을 위해 필수
-    public void toggleLike(String loginId, Long contentId) { //  파라미터 변경: Long -> String(토큰)
+    @Transactional
+    public void toggleLike(Long id, Long contentId) {
 
-        // 1. 토큰에서 추출한 아이디로 진짜 유저(Long id)를 찾습니다.
-        User user = userRepository.findByUserId(loginId)
-                .orElseThrow(() -> new IllegalArgumentException("유저 없음"));
+        // 유저 찾기(userRepository.findByUserId) 삭제 완료! 쿼리 1번 절약.
 
-        // 2. 기존 로직 그대로 유지하되 userId 대신 user.getId() 사용
-        Likes existing = likeRepository.findByUserIdAndContent_ContentId(user.getId(), contentId);
+        //  컨트롤러에서 바로 넘어온 PK(id)를 다이렉트로 사용합니다.
+        Likes existing = likeRepository.findByUserIdAndContent_ContentId(id, contentId);
         Content content = contentRepository.findById(contentId)
                 .orElseThrow(() -> new IllegalArgumentException("작품 없음"));
 
@@ -41,24 +39,19 @@ public class LikeService {
         } else {
             Likes likes = new Likes();
             likes.setContent(content);
-            likes.setUserId(user.getId()); //  수정
+            likes.setUserId(id); // 🌟 PK(id) 바로 꽂아 넣기
             likeRepository.save(likes);
             content.setLikeCount(content.getLikeCount() + 1);
         }
-
-        //  contentRepository.save(content); 삭제됨 ( 체킹으로 자동 저장)
     }
 
-    @Transactional(readOnly = true) //  읽기 전용으로 성능 최적화
-    public Slice<LikedContentDto> getLikedContentList(String loginId, Pageable pageable) {
-        // 1. 유저 찾기
-        User user = userRepository.findByUserId(loginId)
-                .orElseThrow(() -> new IllegalArgumentException("유저 없음"));
+    @Transactional(readOnly = true)
+    public Slice<LikedContentDto> getLikedContentList(Long id, Pageable pageable) {
 
-        // 2. DB에서 찜 목록 엔티티 가져오기
-        Slice<Likes> likesSlice = likeRepository.findByUserId(user.getId(), pageable);
 
-        // 3. 엔티티(Likes)를 프론트엔드용 DTO(LikedContentDto)로 변환해서 반환
+        //  PK(id)를 가지고 찜 창고(LikeRepository)에 바로 요청합니다.
+        Slice<Likes> likesSlice = likeRepository.findByUserId(id, pageable);
+
         return likesSlice.map(like -> LikedContentDto.from(like.getContent()));
     }
 }

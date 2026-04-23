@@ -27,19 +27,19 @@ public class CommentController {
     // 2. 새 부모 댓글 작성
     @PostMapping("/api/episodes/{episodeId}/comments")
     public ResponseEntity<String> createComment(
-            @AuthenticationPrincipal String userId,
+            @AuthenticationPrincipal Long id, // 🌟 String userId -> Long id
             @PathVariable Long episodeId,
             @RequestBody CommentRequestDto requestDto) {
-        commentService.createComment(userId, episodeId, requestDto);
+        commentService.createComment(id, episodeId, requestDto); // 🌟 id 넘겨주기
         return ResponseEntity.ok("댓글이 등록되었습니다.");
     }
 
     // 3. 댓글 삭제 (마이페이지/웹툰 하단 공용)
     @DeleteMapping("/api/comments/{commentId}")
     public ResponseEntity<String> deleteComment(
-            @AuthenticationPrincipal String userId,
+            @AuthenticationPrincipal Long id, // 🌟 String userId -> Long id
             @PathVariable Long commentId) {
-        commentService.deleteComment(userId, commentId);
+        commentService.deleteComment(id, commentId); // 🌟 id 넘겨주기
         return ResponseEntity.ok("댓글이 삭제되었습니다.");
     }
 }

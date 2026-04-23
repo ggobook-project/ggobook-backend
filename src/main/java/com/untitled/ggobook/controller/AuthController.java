@@ -84,13 +84,15 @@ public class AuthController {
         return ResponseEntity.ok("회원가입 성공!");
     }
 
+
     // 5. 로그인 (검증 후 토큰 2개 발급)
     @PostMapping("/login")
     public ResponseEntity<String> login(@RequestBody LoginRequest request, HttpServletResponse response) {
         User user = authService.login(request.getUserId(), request.getPassword());
 
-        String accessToken = jwtUtil.generateAccessToken(user.getUserId(), user.getRole());
-        String refreshToken = jwtUtil.generateRefreshToken(user.getUserId(), user.getRole());
+        // 🌟 수정됨: user.getUserId() 대신 user.getId() 파라미터 2개만 전달
+        String accessToken = jwtUtil.generateAccessToken(user.getId(), user.getRole());
+        String refreshToken = jwtUtil.generateRefreshToken(user.getId(), user.getRole());
 
         Cookie cookie = new Cookie("refreshToken", refreshToken);
         cookie.setHttpOnly(true);
