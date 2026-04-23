@@ -63,7 +63,7 @@ public class AdminInspectionService {
                 episode.getEpisodeNumber());
 
         notificationService.send(
-                content.getAuthorId(),
+                content.getAuthor().getId(), // 🌟 [수정] 작가 객체에서 ID를 꺼내옵니다.
                 approveMessage,
                 Notification.NotificationType.APPROVE,
                 "/author/works/" + content.getContentId()
@@ -93,7 +93,7 @@ public class AdminInspectionService {
                 rejectReason);
 
         notificationService.send(
-                content.getAuthorId(),
+                content.getAuthor().getId(), // 🌟 [수정]
                 rejectMessage,
                 Notification.NotificationType.REJECT,
                 "/author/works/" + episode.getEpisodeId() + "/edit"
@@ -122,9 +122,9 @@ public class AdminInspectionService {
                 reason);
 
         notificationService.send(
-                episode.getContent().getAuthorId(),
+                episode.getContent().getAuthor().getId(), // 🌟 [수정] 체이닝을 통해 작가의 ID까지 도달
                 blindMessage,
-                Notification.NotificationType.REJECT, // 알림 타입 조정 필요
+                Notification.NotificationType.REJECT,
                 "/author/works/" + episode.getEpisodeId()
         );
     }

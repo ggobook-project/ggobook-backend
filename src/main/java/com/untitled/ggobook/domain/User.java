@@ -72,6 +72,14 @@ public class User {
     }
 
     /**
+     * 유저 정지 해제
+     */
+    public void release() {
+        this.status = UserStatus.ACTIVE; // 활성 상태로 복구 (본인의 Enum 상태명에 맞게 수정)
+        this.suspensionEndDate = null;   // 정지 종료일 초기화
+    }
+
+    /**
      * 유저 활동 상태로 복구
      */
     public void activate() {

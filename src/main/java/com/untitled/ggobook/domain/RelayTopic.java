@@ -1,5 +1,6 @@
 package com.untitled.ggobook.domain;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
 import lombok.Data;
 import lombok.ToString;
@@ -23,6 +24,7 @@ public class RelayTopic {
     @ToString.Exclude
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "admin_topic_id")
+    @JsonIgnore
     private AdminRelayTopic adminTopic;
 
     @Column(nullable = false, length = 100)
@@ -37,6 +39,7 @@ public class RelayTopic {
     // 이 주제 아래에서 연재되는 소설 목록 (1:N)
     @ToString.Exclude
     @OneToMany(mappedBy = "relayTopic", cascade = CascadeType.ALL)
+    @JsonIgnore
     private List<RelayNovel> relayNovels = new ArrayList<>();
 
     @PrePersist

@@ -3,6 +3,8 @@ package com.untitled.ggobook.service;
 import com.untitled.ggobook.domain.Notice;
 import com.untitled.ggobook.repository.NoticeRepository;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -12,13 +14,18 @@ public class AdminNoticeService {
 
     private final NoticeRepository noticeRepository;
 
+    @Transactional(readOnly = true)
+    public Page<Notice> getNotices(Pageable pageable) {
+        return noticeRepository.findAllByOrderByIsPinnedDescCreatedAtDesc(pageable);
+    }
+
     @Transactional
     public void registerNotice(String title, String content, boolean isPinned, Long adminId) {
         Notice notice = Notice.builder()
                 .title(title)
                 .content(content)
                 .isPinned(isPinned)
-                .authorId(adminId)
+                .adminId(adminId)
                 .build();
         noticeRepository.save(notice);
     }

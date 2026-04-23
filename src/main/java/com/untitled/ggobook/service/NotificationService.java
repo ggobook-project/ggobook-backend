@@ -1,7 +1,9 @@
 package com.untitled.ggobook.service;
 
 import com.untitled.ggobook.domain.Notification;
+import com.untitled.ggobook.domain.User;
 import com.untitled.ggobook.repository.NotificationRepository;
+import com.untitled.ggobook.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -11,16 +13,23 @@ import java.util.List;
 @RequiredArgsConstructor
 public class NotificationService {
     private final NotificationRepository notificationRepository;
+    private final UserRepository userRepository;
 
     // ✅ 알림 생성 및 저장 (관리자 서비스에서 호출할 메서드)
     @Transactional
     public void send(Long receiverId, String message, Notification.NotificationType type, String url) {
+        // 1. 넘겨받은 ID로 User 엔티티를 먼저 조회합니다.
+        User receiver = userRepository.findById(receiverId)
+                .orElseThrow(() -> new IllegalArgumentException("존재하지 않는 유저입니다."));
+
+        // 2. 이제 빌더에 receiver(객체)를 전달합니다.
         Notification notification = Notification.builder()
-                .receiverId(receiverId)
+                .receiver(receiver) // 🌟 여기를 receiverId(Long) 대신 receiver(User 객체)로 수정!
                 .message(message)
                 .type(type)
                 .relatedUrl(url)
                 .build();
+
         notificationRepository.save(notification);
     }
 
