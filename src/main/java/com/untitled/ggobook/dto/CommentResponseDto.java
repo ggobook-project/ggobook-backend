@@ -30,7 +30,7 @@ public class CommentResponseDto {
 
         return CommentResponseDto.builder()
                 .commentId(comment.getCommentId())
-                .userId(comment.getUserId())
+                .userId(comment.getUser().getId())
                 // 🌟 소프트 삭제 마법: 삭제된 댓글이면 내용을 블라인드 처리
                 .commentText(comment.getIsDeleted() ? "삭제된 댓글입니다." : comment.getCommentText())
                 .isSpoiler(comment.getIsSpoiler())

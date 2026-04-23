@@ -36,7 +36,7 @@ public class CommentService {
                 .orElseThrow(() -> new IllegalArgumentException("회차 없음"));
 
         Comment comment = new Comment();
-        comment.setUserId(id); // 🌟 컨트롤러에서 넘어온 PK(id)를 다이렉트로 꽂아 넣습니다.
+        comment.getUser().setId(id); // 🌟 컨트롤러에서 넘어온 PK(id)를 다이렉트로 꽂아 넣습니다.
         comment.setContent(episode.getContent());
         comment.setEpisode(episode);
         comment.setCommentText(requestDto.getCommentText());
@@ -55,7 +55,7 @@ public class CommentService {
                 .orElseThrow(() -> new IllegalArgumentException("댓글 없음"));
 
         // 컨트롤러에서 넘어온 PK(id)와 댓글 주인의 PK를 직접 비교합니다.
-        if (!comment.getUserId().equals(id)) {
+        if (!comment.getUser().getId().equals(id)) {
             throw new IllegalArgumentException("본인의 댓글만 삭제할 수 있습니다.");
         }
 

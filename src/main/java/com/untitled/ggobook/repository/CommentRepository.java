@@ -21,7 +21,7 @@ public interface CommentRepository extends JpaRepository<Comment, Long> {
     @Query("SELECT c FROM Comment c " +
             "JOIN FETCH c.content " +
             "JOIN FETCH c.episode " +
-            "WHERE c.userId = :userId " +
+            "WHERE c.id = :id " +
             "ORDER BY c.createdAt DESC")
-    Slice<Comment> findMyComments(@Param("userId") Long userId, Pageable pageable);
+    Slice<Comment> findMyComments(@Param("id") Long id, Pageable pageable);
 }

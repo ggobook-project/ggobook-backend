@@ -16,12 +16,12 @@ public class RatingController {
 
     @PostMapping("/{contentId}")
     public ResponseEntity<String> submitRating(
-            @RequestParam("userId") String userLoginId,
+            @RequestParam("id") Long id,
             @PathVariable Long contentId,
             @RequestBody Rating rating
     ) {
 
-        ratingService.submitRating(userLoginId, contentId, rating);
+        ratingService.submitRating(id, contentId, rating);
 
         return ResponseEntity.ok("별점 업로드 성공");
 
@@ -34,11 +34,12 @@ public class RatingController {
 
     }
 
-    @GetMapping("/{contentId}/users/{userId}")
+    @GetMapping("/{contentId}/users/{id}")
     public Rating getRating(
             @PathVariable Long contentId,
-            @PathVariable Long userId
+            @PathVariable Long id
     ){
-        return ratingService.getByUserIdAndContentId(userId, contentId);
+        System.out.println("백엔드 들어옴");
+        return ratingService.getByIdAndContentId(id, contentId);
     }
 }
