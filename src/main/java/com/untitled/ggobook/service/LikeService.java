@@ -3,16 +3,15 @@ package com.untitled.ggobook.service;
 import com.untitled.ggobook.domain.Content;
 import com.untitled.ggobook.domain.Likes;
 import com.untitled.ggobook.domain.User;
-import com.untitled.ggobook.dto.LikedContentDto; //  DTO 추가
+import com.untitled.ggobook.dto.LikedContentDto;
 import com.untitled.ggobook.repository.ContentRepository;
 import com.untitled.ggobook.repository.LikeRepository;
-import com.untitled.ggobook.repository.UserRepository; //  추가
+import com.untitled.ggobook.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Slice;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional; //  추가
 import org.springframework.transaction.annotation.Transactional;
 
 @Service

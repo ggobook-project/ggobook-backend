@@ -16,12 +16,12 @@ public class RatingController {
 
     @PostMapping("/{contentId}")
     public ResponseEntity<String> submitRating(
-            @RequestParam("userId") Long userId,
+            @RequestParam("userId") String userLoginId,
             @PathVariable Long contentId,
             @RequestBody Rating rating
     ) {
 
-        ratingService.submitRating(userId, contentId, rating);
+        ratingService.submitRating(userLoginId, contentId, rating);
 
         return ResponseEntity.ok("별점 업로드 성공");
 

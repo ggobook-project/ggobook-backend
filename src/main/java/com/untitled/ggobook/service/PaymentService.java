@@ -14,4 +14,6 @@ public class PaymentService {
     private final PaymentRepository paymentRepository;
 
 
+    public void chargePoint(Long userId, Integer amount) {
+    }
 }
