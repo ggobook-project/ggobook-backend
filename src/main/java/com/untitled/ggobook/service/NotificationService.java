@@ -36,7 +36,8 @@ public class NotificationService {
     // 작가별 알림 목록 조회
     @Transactional(readOnly = true)
     public List<Notification> getNotifications(Long receiverId) {
-        return notificationRepository.findByReceiverIdOrderByCreatedAtDesc(receiverId);
+        // 🌟 수정: 바뀐 메서드명으로 호출
+        return notificationRepository.findByReceiverIdAndIsDeletedFalseOrderByCreatedAtDesc(receiverId);
     }
 
     // 알림 읽음 처리
@@ -45,5 +46,23 @@ public class NotificationService {
         Notification notification = notificationRepository.findById(notificationId)
                 .orElseThrow(() -> new IllegalArgumentException("알림을 찾을 수 없습니다."));
         notification.setRead(true);
+    }
+
+    // 🌟 수정: 개별 알림 소프트 삭제
+    // NotificationService.java 내부
+
+    @Transactional
+    public void deleteNotification(Long notificationId) {
+        Notification notification = notificationRepository.findById(notificationId)
+                .orElseThrow(() -> new IllegalArgumentException("알림이 존재하지 않습니다."));
+
+        // 🌟 물리적으로 delete 하는 대신 상태만 변경 (Dirty Checking으로 자동 반영)
+        notification.markAsDeleted();
+    }
+
+    @Transactional
+    public void deleteAllNotifications(Long receiverId) {
+        // 🌟 리포지토리에 만든 벌크 업데이트 쿼리 호출
+        notificationRepository.softDeleteAllByReceiverId(receiverId);
     }
 }

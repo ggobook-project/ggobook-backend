@@ -32,6 +32,10 @@ public class Report {
     @JoinColumn(name = "reported_user_id", nullable = false)
     private User reportedUser; // 🚨 신고당한 회원 (정지 대상을 바로 뽑아오기 위해 추가!)
 
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "admin_id")
+    private User admin;
+
     // ==========================================
     // 기존의 훌륭한 설계 유지: 무엇을 신고했는가?
     // ==========================================
@@ -78,15 +82,15 @@ public class Report {
         this.reportReason = reportReason;
     }
 
-    // 관리자가 허위 신고로 판명하여 기각할 때 호출
-    public void rejectReport(String processReason) {
+    public void rejectReport(User admin, String processReason) {
+        this.admin = admin;
         this.status = ReportStatus.REJECTED;
         this.processReason = processReason;
         this.updatedAt = LocalDateTime.now();
     }
 
-    // 관리자가 진짜 신고로 인정하여 유저를 정지시킬 때 호출
-    public void resolveReport(String processReason) {
+    public void resolveReport(User admin, String processReason) {
+        this.admin = admin;
         this.status = ReportStatus.RESOLVED;
         this.processReason = processReason;
         this.updatedAt = LocalDateTime.now();

@@ -5,6 +5,7 @@ import com.untitled.ggobook.domain.enums.SuspensionDuration;
 import com.untitled.ggobook.service.AdminReportService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -27,12 +28,14 @@ public class AdminReportController {
     @PostMapping("/{reportId}/approve")
     public ResponseEntity<String> approveReport(
             @PathVariable Long reportId,
+            @AuthenticationPrincipal Long adminId, // 🌟 로그인한 관리자 ID 주입
             @RequestBody Map<String, String> request) {
 
         SuspensionDuration duration = SuspensionDuration.valueOf(request.get("duration"));
         String processReason = request.get("processReason");
 
-        adminReportService.approveReportAndSuspendUser(reportId, duration, processReason);
+        // 🌟 서비스에 adminId 전달
+        adminReportService.approveReportAndSuspendUser(reportId, adminId, duration, processReason);
         return ResponseEntity.ok("신고 처리 및 유저 정지가 완료되었습니다.");
     }
 
@@ -40,10 +43,13 @@ public class AdminReportController {
     @PostMapping("/{reportId}/resolve")
     public ResponseEntity<String> resolveReportOnly(
             @PathVariable Long reportId,
+            @AuthenticationPrincipal Long adminId, // 🌟 로그인한 관리자 ID 주입
             @RequestBody Map<String, String> request) {
 
         String processReason = request.get("processReason");
-        adminReportService.resolveReportOnly(reportId, processReason);
+
+        // 🌟 서비스에 adminId 전달
+        adminReportService.resolveReportOnly(reportId, adminId, processReason);
         return ResponseEntity.ok("신고가 단순 완료 처리되었습니다.");
     }
 
@@ -51,10 +57,13 @@ public class AdminReportController {
     @PostMapping("/{reportId}/reject")
     public ResponseEntity<String> rejectReport(
             @PathVariable Long reportId,
+            @AuthenticationPrincipal Long adminId, // 🌟 로그인한 관리자 ID 주입
             @RequestBody Map<String, String> request) {
 
         String processReason = request.get("processReason");
-        adminReportService.rejectReport(reportId, processReason);
+
+        // 🌟 서비스에 adminId 전달
+        adminReportService.rejectReport(reportId, adminId, processReason);
         return ResponseEntity.ok("허위 신고로 기각 처리되었습니다.");
     }
 }

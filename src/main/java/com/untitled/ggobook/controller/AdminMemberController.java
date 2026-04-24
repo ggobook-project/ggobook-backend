@@ -9,6 +9,7 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.web.PageableDefault;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.Map;
@@ -36,17 +37,18 @@ public class AdminMemberController {
     @PostMapping("/{userId}/suspend")
     public ResponseEntity<String> suspendMember(
             @PathVariable Long userId,
-            @RequestBody Map<String, String> request) {
-
+            @RequestBody Map<String, String> request,
+            @AuthenticationPrincipal Long adminId
+    ) {
         SuspensionDuration duration = SuspensionDuration.valueOf(request.get("duration"));
         String reasonCode = request.get("reason");
 
-        // 🌟 기타 사유일 경우 입력창 값을 사용
         String finalReason = reasonCode.equals("OTHER") ?
                 request.get("customReason") :
                 ReportReason.valueOf(reasonCode).getDescription();
 
-        adminMemberService.suspendMember(6L, userId, duration, finalReason);
+        // 🌟 파라미터로 받은 adminId를 그대로 사용합니다.
+        adminMemberService.suspendMember(adminId, userId, duration, finalReason);
         return ResponseEntity.ok("정지 처리되었습니다.");
     }
 
@@ -54,12 +56,10 @@ public class AdminMemberController {
     @PostMapping("/{userId}/release")
     public ResponseEntity<String> releaseMember(
             @PathVariable Long userId,
-            @RequestBody Map<String, String> request) {
-
+            @RequestBody Map<String, String> request,
+            @AuthenticationPrincipal Long adminId // 🌟 여기도 똑같이 Long으로!
+    ) {
         String reason = request.getOrDefault("reason", "관리자 직권 정지 해제");
-
-        // 실제 운영 시 로그인된 관리자 ID를 가져오는 로직으로 대체 (이전 논의 참조)
-        Long adminId = 6L;
 
         adminMemberService.releaseMember(adminId, userId, reason);
         return ResponseEntity.ok("회원 정지가 성공적으로 해제되었습니다.");

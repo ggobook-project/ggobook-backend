@@ -3,6 +3,7 @@ package com.untitled.ggobook.service;
 import com.untitled.ggobook.domain.SignupRequest;
 import com.untitled.ggobook.domain.User;
 import com.untitled.ggobook.repository.UserRepository;
+import com.untitled.ggobook.util.JwtUtil;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
@@ -63,18 +64,48 @@ public class AuthService {
         userRepository.save(user); // DB에 쏙!
     }
 
-    // 5. 로그인 검증 로직
+    //  수정: 5. 로그인 (검증 후 토큰 2개 발급 + Redis에 Refresh Token 저장)
     @Transactional(readOnly = true)
     public User login(String userId, String password) {
         User user = userRepository.findByUserId(userId)
                 .orElseThrow(() -> new RuntimeException("존재하지 않는 아이디입니다."));
 
-        // 평문 비번과 DB의 암호화된 비번 비교
         if (!passwordEncoder.matches(password, user.getPassword())) {
             throw new RuntimeException("비밀번호가 일치하지 않습니다.");
         }
+        return user;
+    }
 
-        return user; // 검증 통과하면 유저 정보 반환
+    // 🌟 추가: 5-1. Refresh Token을 Redis에 안전하게 보관 (유효기간 7일)
+    public void saveRefreshToken(Long userId, String refreshToken) {
+        redisTemplate.opsForValue().set("RT:" + userId, refreshToken, Duration.ofDays(7));
+    }
+
+    // 🌟 추가: 5-2. Access Token 재발급 로직 (대기업 핵심 보안)
+    @Transactional(readOnly = true)
+    public String refreshAccessToken(String refreshToken, JwtUtil jwtUtil) {
+        // 1. 토큰 자체의 유효성(위조, 만료) 검사
+        if (!jwtUtil.validateToken(refreshToken)) {
+            throw new RuntimeException("만료되었거나 유효하지 않은 리프레시 토큰입니다. 다시 로그인해주세요.");
+        }
+
+        // 2. 토큰에서 유저 PK 꺼내기
+        Long userId = jwtUtil.getIdFromToken(refreshToken);
+        String role = jwtUtil.getRoleFromToken(refreshToken);
+
+        // 3. Redis에 저장된 '진짜' 토큰과 비교 (탈취당한 낡은 토큰 방어)
+        String storedToken = redisTemplate.opsForValue().get("RT:" + userId);
+        if (storedToken == null || !storedToken.equals(refreshToken)) {
+            throw new RuntimeException("보안 문제로 로그아웃 처리되었습니다. 다시 로그인해주세요.");
+        }
+
+        // 4. 모든 검문을 통과하면 싱싱한 새 Access Token 발급!
+        return jwtUtil.generateAccessToken(userId, role);
+    }
+
+    // 🌟 추가: 로그아웃 시 Redis에서 토큰 파기
+    public void deleteRefreshToken(Long userId) {
+        redisTemplate.delete("RT:" + userId);
     }
     //  6 아이디 찾기 로직 (마스킹 응답 + 전체 아이디 이메일 동시 발송)
     @Transactional(readOnly = true)

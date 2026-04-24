@@ -61,7 +61,9 @@ public class Episode {
             return null;
         }
 
-        if ("NOVEL".equalsIgnoreCase(this.content.getType()) && this.novel != null) {
+        String type = this.content.getType();
+
+        if (("NOVEL".equalsIgnoreCase(type) || "웹소설".equals(type)) && this.novel != null) {
             return this.novel.getContentText();
         }
         return null;
@@ -70,7 +72,11 @@ public class Episode {
     public void approve(LocalDateTime scheduledAt, String aiSummary) {
         this.status = Status.APPROVED;
         this.scheduledAt = scheduledAt;
-        this.aiSummary = aiSummary;
+
+        // AI 요약이 유효한 경우에만 저장하고, 실패했거나 없으면 null로 유지
+        if (aiSummary != null && !aiSummary.startsWith("AI 요약 생성에 실패")) {
+            this.aiSummary = aiSummary;
+        }
     }
 
     public void reject(String reason) {

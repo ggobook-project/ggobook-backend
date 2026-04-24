@@ -28,45 +28,44 @@ public class AdminInspectionService {
 
     @Transactional(readOnly = true)
     public Episode getEpisodeDetail(Long episodeId) {
-        // ✅ [수정] 기본 findById 대신 Fetch Join이 적용된 쿼리를 사용합니다.
         return episodeRepository.findByIdWithDetails(episodeId)
                 .orElseThrow(() -> new IllegalArgumentException("해당 회차를 찾을 수 없습니다."));
     }
 
     @Transactional
     public void approveEpisode(Long episodeId, LocalDateTime scheduledAt) {
+
         Episode episode = getEpisodeDetail(episodeId);
         Content content = episode.getContent();
 
         String textForAI = episode.getExtractableTextForAI();
-        String aiSummary = "웹툰은 요약이 제공되지 않습니다."; // 기본값 세팅
 
-        // AI 텍스트가 존재하면 요약 요청
+        String aiSummary = null;
+
         if (textForAI != null && !textForAI.trim().isEmpty()) {
             try {
                 aiSummary = aiRequestUtil.sendRequest(textForAI);
             } catch (Exception e) {
-                aiSummary = "AI 요약 생성에 실패했습니다."; // 장애 방어
+                e.printStackTrace(); // 어떤 에러인지 상세히 출력
             }
+        } else {
+            System.out.println("DEBUG: [알림] 추출할 텍스트가 없어 요약을 건너뜁니다.");
         }
 
-        // 🌟 [수정] 무분별한 Setter 대신, 명확한 도메인 메서드 호출!
         episode.approve(scheduledAt, aiSummary);
 
         if (episode.getEpisodeNumber() == 1 && content.getStatus() == Status.PENDING) {
-            content.approve(); // 1화면 작품 자체도 승인
+            content.approve();
         }
 
-        // ✅ [기존 로직 유지] 승인 완료 알림 발송
         String approveMessage = String.format("[%s] %d화가 승인되었습니다. 연재를 시작합니다!",
-                content.getTitle(),
-                episode.getEpisodeNumber());
+                content.getTitle(), episode.getEpisodeNumber());
 
         notificationService.send(
-                content.getAuthor().getId(), // 🌟 [수정] 작가 객체에서 ID를 꺼내옵니다.
+                content.getAuthor().getId(),
                 approveMessage,
                 Notification.NotificationType.APPROVE,
-                "/author/works/" + content.getContentId()
+                "/author/contents"
         );
     }
 
@@ -79,24 +78,23 @@ public class AdminInspectionService {
         Episode episode = getEpisodeDetail(episodeId);
         Content content = episode.getContent();
 
-        // 🌟 [수정] Setter 대신 도메인 메서드 호출
         episode.reject(rejectReason);
 
         if (episode.getEpisodeNumber() == 1 && content.getStatus() == Status.PENDING) {
             content.reject("1화 반려로 인한 기각: " + rejectReason);
         }
 
-        // 알림 발송 (기존 로직 유지)
-        String rejectMessage = String.format("[%s] %d화가 반려되었습니다. 사유: %s",
+        // 🌟 반려 알림 발송 (경로 통일 및 사유 포함)
+        String rejectMessage = String.format("[%s] %d화가 반려되었습니다. [사유: %s]",
                 content.getTitle(),
                 episode.getEpisodeNumber(),
                 rejectReason);
 
         notificationService.send(
-                content.getAuthor().getId(), // 🌟 [수정]
+                content.getAuthor().getId(),
                 rejectMessage,
                 Notification.NotificationType.REJECT,
-                "/author/works/" + episode.getEpisodeId() + "/edit"
+                "/author/contents"
         );
     }
 
@@ -105,28 +103,22 @@ public class AdminInspectionService {
         return episodeRepository.findByStatus(Status.APPROVED);
     }
 
-    // ==========================================
-    // 🌟 [신규 추가] 일반 작품/회차 강제 블라인드
-    // ==========================================
     @Transactional
     public void blindContent(Long episodeId, String reason) {
         Episode episode = getEpisodeDetail(episodeId);
-
-        // 일반 회차는 릴레이가 아니므로 AI 스토리 브릿지 없이 바로 가림 처리
         episode.blind(reason);
 
-        // (선택) 작가에게 블라인드 당했다고 알림 보내기
-        String blindMessage = String.format("[%s] %d화가 관리자에 의해 블라인드 처리되었습니다. 사유: %s",
+        // 🌟 블라인드 알림 발송 (경로 통일)
+        String blindMessage = String.format("[%s] %d화가 관리자에 의해 블라인드 처리되었습니다. [사유: %s]",
                 episode.getContent().getTitle(),
                 episode.getEpisodeNumber(),
                 reason);
 
         notificationService.send(
-                episode.getContent().getAuthor().getId(), // 🌟 [수정] 체이닝을 통해 작가의 ID까지 도달
+                episode.getContent().getAuthor().getId(),
                 blindMessage,
                 Notification.NotificationType.REJECT,
-                "/author/works/" + episode.getEpisodeId()
+                "/author/contents"
         );
     }
-
 }
