@@ -78,7 +78,7 @@ public class AuthService {
 
     // 🌟 추가: 5-1. Refresh Token을 Redis에 안전하게 보관 (유효기간 7일)
     public void saveRefreshToken(Long userId, String refreshToken) {
-        redisTemplate.opsForValue().set("RT:" + userId, refreshToken, Duration.ofDays(7));
+        redisTemplate.opsForValue().set("RT:" + userId, refreshToken, Duration.ofHours(15));
     }
 
     // 🌟 추가: 5-2. Access Token 재발급 로직 (대기업 핵심 보안)

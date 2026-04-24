@@ -99,7 +99,7 @@ public class AuthController {
         Cookie cookie = new Cookie("refreshToken", refreshToken);
         cookie.setHttpOnly(true); // 자바스크립트로 탈취 불가 (XSS 방어)
         cookie.setPath("/");
-        cookie.setMaxAge(7 * 24 * 60 * 60);
+        cookie.setMaxAge(15 * 60 * 60);
         response.addCookie(cookie);
 
         return ResponseEntity.ok(accessToken);
