@@ -17,8 +17,9 @@ public class Comment {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long commentId;
 
-    @Column(name = "user_id", nullable = false)
-    private Long userId;
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "user_id", nullable = false)
+    private User user;
 
     @ToString.Exclude
     @ManyToOne(fetch = FetchType.LAZY)
@@ -49,4 +50,7 @@ public class Comment {
     @ToString.Exclude
     @OneToMany(mappedBy = "comment", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<Reply> replies = new ArrayList<>();
+
+    @Column(nullable = false)
+    private Boolean isDeleted = false; // 기본값은 false(안 지워짐)
 }

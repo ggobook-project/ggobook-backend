@@ -39,37 +39,39 @@ public class AdminInspectionService {
         Content content = episode.getContent();
 
         String textForAI = episode.getExtractableTextForAI();
+        String aiSummary = "웹툰은 요약이 제공되지 않습니다."; // 기본값 세팅
 
+        // AI 텍스트가 존재하면 요약 요청
         if (textForAI != null && !textForAI.trim().isEmpty()) {
-            String aiSummary = aiRequestUtil.sendRequest(textForAI);
-            episode.setAiSummary(aiSummary);
-        } else {
-            episode.setAiSummary("웹툰은 요약이 제공되지 않습니다.");
+            try {
+                aiSummary = aiRequestUtil.sendRequest(textForAI);
+            } catch (Exception e) {
+                aiSummary = "AI 요약 생성에 실패했습니다."; // 장애 방어
+            }
         }
 
-        episode.setStatus(Status.APPROVED);
-        episode.setScheduledAt(scheduledAt);
+        // 🌟 [수정] 무분별한 Setter 대신, 명확한 도메인 메서드 호출!
+        episode.approve(scheduledAt, aiSummary);
 
         if (episode.getEpisodeNumber() == 1 && content.getStatus() == Status.PENDING) {
-            content.setStatus(Status.APPROVED);
+            content.approve(); // 1화면 작품 자체도 승인
         }
 
-        // ✅ [추가 로직] 승인 완료 알림 발송
+        // ✅ [기존 로직 유지] 승인 완료 알림 발송
         String approveMessage = String.format("[%s] %d화가 승인되었습니다. 연재를 시작합니다!",
                 content.getTitle(),
                 episode.getEpisodeNumber());
 
         notificationService.send(
-                content.getAuthorId(),                          // 수신자 (작가 ID)
-                approveMessage,                                 // 메시지 내용
-                Notification.NotificationType.APPROVE,          // 알림 타입 (승인)
-                "/author/works/" + content.getContentId()       // 🎯 클릭 시 이동할 URL (작품 홈)
+                content.getAuthor().getId(), // 🌟 [수정] 작가 객체에서 ID를 꺼내옵니다.
+                approveMessage,
+                Notification.NotificationType.APPROVE,
+                "/author/works/" + content.getContentId()
         );
     }
 
     @Transactional
     public void rejectEpisode(Long episodeId, String rejectReason) {
-        // 🛡️ [안전장치] 반려 사유가 비어있으면 에러를 던져서 데이터베이스 오염을 막습니다.
         if (rejectReason == null || rejectReason.trim().isEmpty()) {
             throw new IllegalArgumentException("반려 사유는 필수 입력 사항입니다.");
         }
@@ -77,23 +79,21 @@ public class AdminInspectionService {
         Episode episode = getEpisodeDetail(episodeId);
         Content content = episode.getContent();
 
-        // 1. [기존 로직] 회차 및 작품 상태를 반려(REJECTED)로 업데이트
-        episode.setStatus(Status.REJECTED);
-        episode.setRejectReason(rejectReason);
+        // 🌟 [수정] Setter 대신 도메인 메서드 호출
+        episode.reject(rejectReason);
 
         if (episode.getEpisodeNumber() == 1 && content.getStatus() == Status.PENDING) {
-            content.setStatus(Status.REJECTED);
-            content.setRejectReason("1화 반려로 인한 기각: " + rejectReason);
+            content.reject("1화 반려로 인한 기각: " + rejectReason);
         }
 
-        // 2. [추가 로직] 반려 사유를 포함하여 작가에게 알림 발송
+        // 알림 발송 (기존 로직 유지)
         String rejectMessage = String.format("[%s] %d화가 반려되었습니다. 사유: %s",
                 content.getTitle(),
                 episode.getEpisodeNumber(),
                 rejectReason);
 
         notificationService.send(
-                content.getAuthorId(),
+                content.getAuthor().getId(), // 🌟 [수정]
                 rejectMessage,
                 Notification.NotificationType.REJECT,
                 "/author/works/" + episode.getEpisodeId() + "/edit"
@@ -104,4 +104,29 @@ public class AdminInspectionService {
     public List<Episode> getApprovedList() {
         return episodeRepository.findByStatus(Status.APPROVED);
     }
+
+    // ==========================================
+    // 🌟 [신규 추가] 일반 작품/회차 강제 블라인드
+    // ==========================================
+    @Transactional
+    public void blindContent(Long episodeId, String reason) {
+        Episode episode = getEpisodeDetail(episodeId);
+
+        // 일반 회차는 릴레이가 아니므로 AI 스토리 브릿지 없이 바로 가림 처리
+        episode.blind(reason);
+
+        // (선택) 작가에게 블라인드 당했다고 알림 보내기
+        String blindMessage = String.format("[%s] %d화가 관리자에 의해 블라인드 처리되었습니다. 사유: %s",
+                episode.getContent().getTitle(),
+                episode.getEpisodeNumber(),
+                reason);
+
+        notificationService.send(
+                episode.getContent().getAuthor().getId(), // 🌟 [수정] 체이닝을 통해 작가의 ID까지 도달
+                blindMessage,
+                Notification.NotificationType.REJECT,
+                "/author/works/" + episode.getEpisodeId()
+        );
+    }
+
 }

@@ -2,6 +2,8 @@ package com.untitled.ggobook.domain;
 
 import jakarta.persistence.*;
 import lombok.Data;
+import lombok.ToString;
+import net.minidev.json.annotate.JsonIgnore;
 
 import java.time.LocalDateTime;
 
@@ -14,8 +16,9 @@ public class Point {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long pointId;
 
-    @Column(name = "user_id", nullable = false)
-    private Long userId;
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "user_id", nullable = false)
+    private User user;
 
     // CHARGE(충전) / DEDUCT(차감)
     @Column(nullable = false, length = 20)
@@ -29,4 +32,11 @@ public class Point {
 
     @Column(nullable = false)
     private LocalDateTime createdAt = LocalDateTime.now();
+
+    @ToString.Exclude
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "wallet_id", nullable = false)
+    @JsonIgnore
+    private Wallet wallet;
+
 }

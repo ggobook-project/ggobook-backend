@@ -7,6 +7,10 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.data.redis.core.StringRedisTemplate;
+
+import java.time.Duration;
+import java.util.UUID;
 
 @Service
 @RequiredArgsConstructor
@@ -14,6 +18,9 @@ public class AuthService {
 
     private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
+
+    private final EmailService emailService;
+    private final StringRedisTemplate redisTemplate;
 
     // 1. 아이디 중복 확인
     @Transactional(readOnly = true)
@@ -69,4 +76,62 @@ public class AuthService {
 
         return user; // 검증 통과하면 유저 정보 반환
     }
+    //  6 아이디 찾기 로직 (마스킹 응답 + 전체 아이디 이메일 동시 발송)
+    @Transactional(readOnly = true)
+    public String findId(String name, String email) {
+        User user = userRepository.findByNameAndEmail(name, email)
+                .orElseThrow(() -> new RuntimeException("일치하는 회원 정보가 없습니다."));
+
+        String userId = user.getUserId();
+
+        // 1. 유저 몰래 전체 아이디를 이메일로 슝! 발송합니다.
+        emailService.sendFullIdEmail(email, userId);
+
+        // 2. 리액트 화면에 보여줄 아이디는 뒤에 3자리를 마스킹 처리합니다.
+        if (userId.length() > 3) {
+            return userId.substring(0, userId.length() - 3) + "***";
+        }
+        return userId;
+    }
+
+    // 7. 비밀번호 재설정 링크 생성 및 발송 로직 (30분 유효기간)
+    @Transactional(readOnly = true)
+    public void generateAndSendResetToken(String userId, String name, String email) {
+        User user = userRepository.findByUserId(userId)
+                .orElseThrow(() -> new RuntimeException("일치하는 회원 정보가 없습니다."));
+
+        if (!user.getName().equals(name) || !user.getEmail().equals(email)) {
+            throw new RuntimeException("회원 정보가 일치하지 않습니다.");
+        }
+
+        // 1회용 특수 마스터키(토큰) 생성
+        String resetToken = UUID.randomUUID().toString();
+
+        // Redis에 저장 (Key: RESET:토큰값, Value: 유저아이디, 시간: 30분)
+        redisTemplate.opsForValue().set("RESET:" + resetToken, user.getUserId(), Duration.ofMinutes(30));
+
+        // 이메일 발송
+        emailService.sendPasswordResetLink(email, resetToken);
+    }
+
+    // 8. 이메일 링크를 통한 실제 비밀번호 변경 로직
+    @Transactional
+    public void resetPasswordWithToken(String token, String newPassword) {
+        // 1. Redis에서 토큰으로 유저 아이디 꺼내기
+        String userId = redisTemplate.opsForValue().get("RESET:" + token);
+        if (userId == null) {
+            throw new RuntimeException("유효하지 않거나 만료된 링크입니다. 다시 시도해 주세요.");
+        }
+
+        // 2. 유저 조회
+        User user = userRepository.findByUserId(userId)
+                .orElseThrow(() -> new RuntimeException("회원 정보를 찾을 수 없습니다."));
+
+        // 3. 새 비밀번호 암호화 후 DB에 덮어쓰기
+        user.setPassword(passwordEncoder.encode(newPassword));
+
+        // 4. 보안을 위해 한 번 사용된 토큰은 Redis에서 즉시 파기 (1회용 보장!)
+        redisTemplate.delete("RESET:" + token);
+    }
+
 }

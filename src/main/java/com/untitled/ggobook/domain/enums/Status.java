@@ -6,5 +6,5 @@ public enum Status {
     APPROVED,   // 검수 완료 (예약 상태)
     PUBLISHED,  // 공개 완료
     REJECTED, // 반려
-    PRIVATE // 숨김
+    BLINDED     // 관리자/시스템에 의한 강제 블라인드
 }

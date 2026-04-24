@@ -2,6 +2,8 @@ package com.untitled.ggobook.domain;
 
 import jakarta.persistence.*;
 import lombok.Data;
+import lombok.ToString;
+import net.minidev.json.annotate.JsonIgnore;
 
 import java.time.LocalDateTime;
 
@@ -14,8 +16,9 @@ public class Payment {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long paymentId;
 
-    @Column(name = "user_id", nullable = false)
-    private Long userId;
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "user_id", nullable = false)
+    private User user;
 
     // 포트원 고유 결제 번호
     @Column(nullable = false, unique = true, length = 100)
@@ -44,4 +47,10 @@ public class Payment {
 
     @Column(nullable = false)
     private LocalDateTime updatedAt = LocalDateTime.now();
+
+    @ToString.Exclude
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "wallet_id", nullable = false)
+    @JsonIgnore
+    private Wallet wallet;
 }

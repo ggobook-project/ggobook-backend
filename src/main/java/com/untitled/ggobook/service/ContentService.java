@@ -14,6 +14,7 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Slice;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
+import com.untitled.ggobook.repository.LikeRepository;
 
 
 // 작품 서비스
@@ -25,6 +26,7 @@ public class ContentService {
     private final ContentRepository contentRepository;
     private final EpisodeRepository episodeRepository;
     private final FileUtil fileUtil;
+    private final LikeRepository likeRepository;
 
     public Slice<Content> getContentList(String keyword, String genre, String type, Pageable pageable) {
         String searchKeyword = (keyword == null || keyword.isBlank()) ? null : keyword;
@@ -34,16 +36,20 @@ public class ContentService {
     }
 
     @Transactional
-    public ContentDetailDto getContentDetail(Long contentId, Pageable pageable, String currentNeedStatus) {
+    public ContentDetailDto getContentDetail(Long contentId,Long userId, Pageable pageable, String currentNeedStatus) {
 
         Content content = contentRepository.findById(contentId)
                 .orElseThrow(() -> new IllegalArgumentException("작품 없음"));
 
         content.setViewCount(content.getViewCount() + 1);
-        contentRepository.save(content);
 
 
         Slice<Episode> episodes = episodeRepository.findEpisodeListByContentId(contentId, pageable, currentNeedStatus);
+
+        boolean isLiked = false;
+        if (userId != null) {
+            isLiked = likeRepository.findByUserIdAndContent_ContentId(userId, contentId) != null;
+        }
 
         return new ContentDetailDto(
                 content.getContentId(),
@@ -52,7 +58,9 @@ public class ContentService {
                 content.getGenre(),
                 content.getSummary(),
                 content.getThumbnailUrl(),
-                episodes
+                episodes,
+                isLiked
+
         );
     }
 

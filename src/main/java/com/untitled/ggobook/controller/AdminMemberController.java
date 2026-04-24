@@ -1,5 +1,6 @@
 package com.untitled.ggobook.controller;
 
+import com.untitled.ggobook.domain.enums.ReportReason;
 import com.untitled.ggobook.domain.enums.SuspensionDuration;
 import com.untitled.ggobook.dto.UserAdminResponseDto;
 import com.untitled.ggobook.service.AdminMemberService;
@@ -38,13 +39,30 @@ public class AdminMemberController {
             @RequestBody Map<String, String> request) {
 
         SuspensionDuration duration = SuspensionDuration.valueOf(request.get("duration"));
-        String reason = request.get("reason");
+        String reasonCode = request.get("reason");
 
-        // 실제 운영 시 로그인된 관리자 ID를 가져오는 로직으로 대체 필요
-        Long adminId = 1L;
+        // 🌟 기타 사유일 경우 입력창 값을 사용
+        String finalReason = reasonCode.equals("OTHER") ?
+                request.get("customReason") :
+                ReportReason.valueOf(reasonCode).getDescription();
 
-        adminMemberService.suspendMember(adminId, userId, duration, reason);
-        return ResponseEntity.ok("회원이 성공적으로 정지되었습니다.");
+        adminMemberService.suspendMember(6L, userId, duration, finalReason);
+        return ResponseEntity.ok("정지 처리되었습니다.");
+    }
+
+    // 기존 suspendMember 아래에 추가
+    @PostMapping("/{userId}/release")
+    public ResponseEntity<String> releaseMember(
+            @PathVariable Long userId,
+            @RequestBody Map<String, String> request) {
+
+        String reason = request.getOrDefault("reason", "관리자 직권 정지 해제");
+
+        // 실제 운영 시 로그인된 관리자 ID를 가져오는 로직으로 대체 (이전 논의 참조)
+        Long adminId = 6L;
+
+        adminMemberService.releaseMember(adminId, userId, reason);
+        return ResponseEntity.ok("회원 정지가 성공적으로 해제되었습니다.");
     }
 
 

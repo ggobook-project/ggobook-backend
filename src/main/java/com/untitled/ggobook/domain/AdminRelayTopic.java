@@ -1,5 +1,6 @@
 package com.untitled.ggobook.domain;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
 import lombok.Data;
 import lombok.ToString;
@@ -28,6 +29,7 @@ public class AdminRelayTopic {
     // 이 공식 주제를 기반으로 생성된 유저들의 주제들 (1:N)
     @ToString.Exclude
     @OneToMany(mappedBy = "adminTopic")
+    @JsonIgnore
     private List<RelayTopic> userTopics = new ArrayList<>();
 
     @PrePersist

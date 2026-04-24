@@ -57,4 +57,16 @@ public class AdminMemberService {
 
         memberSuspendRepository.save(suspendLog);
     }
+
+    @Transactional
+    public void releaseMember(Long adminId, Long userId, String reason) {
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new IllegalArgumentException("유저를 찾을 수 없습니다."));
+
+        // 유저 상태를 ACTIVE로 되돌림
+        user.release();
+
+        // (선택) 정지 해제 이력도 DB에 남기면 추후 운영에 매우 도움이 됩니다.
+        // 해제 로그 엔티티가 없다면 생략하셔도 무방합니다.
+    }
 }

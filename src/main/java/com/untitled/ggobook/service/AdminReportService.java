@@ -55,6 +55,18 @@ public class AdminReportService {
     }
 
     // ==========================================
+    // [처리] 단순 신고 완료 처리 (유저 정지 X - 중복 신고 처리용)
+    // ==========================================
+    @Transactional
+    public void resolveReportOnly(Long reportId, String processReason) {
+        Report report = reportRepository.findById(reportId)
+                .orElseThrow(() -> new IllegalArgumentException("해당 신고 내역을 찾을 수 없습니다."));
+
+        // 유저 정지 로직 없이, 신고 자체만 '해결됨' 상태로 변경
+        report.resolveReport(processReason);
+    }
+
+    // ==========================================
     // [처리] 신고 반려 (허위 신고 기각)
     // ==========================================
     @Transactional

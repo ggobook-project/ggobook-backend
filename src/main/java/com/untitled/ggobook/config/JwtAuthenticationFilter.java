@@ -36,12 +36,16 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
         String token = resolveToken(request);
 
         if (token != null && jwtUtil.validateToken(token)) {
-            String userId = jwtUtil.getUserIdFromToken(token);
+            //  핵심: String 아이디 대신, 방금 만든 메서드로 PK(Long)를 추출합니다!
+            Long id = jwtUtil.getIdFromToken(token);
             String role = jwtUtil.getRoleFromToken(token);
 
             SimpleGrantedAuthority authority = new SimpleGrantedAuthority("ROLE_" + role);
+
+            //  핵심: 주체(Principal) 자리에 String userId 대신 Long id를 박아버립니다!
+            // 이제 모든 컨트롤러에서 @AuthenticationPrincipal Long userId 로 받을 수 있습니다.
             UsernamePasswordAuthenticationToken authentication =
-                    new UsernamePasswordAuthenticationToken(userId, null, Collections.singletonList(authority));
+                    new UsernamePasswordAuthenticationToken(id, null, Collections.singletonList(authority));
 
             SecurityContextHolder.getContext().setAuthentication(authentication);
         }

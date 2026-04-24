@@ -10,6 +10,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
+import java.util.Map;
 
 @RestController
 @RequestMapping("/api/admin")
@@ -48,6 +49,18 @@ public class AdminRelayController {
     }
 
     /**
+     * 🌟 [신규 추가] 릴레이 소설 상세 조회 (이것이 없어서 405 에러가 났습니다!)
+     * API: GET /api/admin/relay-novels/{novelId}
+     */
+    @GetMapping("/relay-novels/{novelId}")
+    public ResponseEntity<RelayNovel> getRelayNovelDetail(@PathVariable Long novelId) {
+        // 서비스 단에 getRelayNovelDetail(novelId) 메서드가 있어야 합니다.
+        // 해당 메서드는 novelId로 소설을 찾아서 리턴해주는 역할을 합니다.
+        RelayNovel novel = adminRelayService.getRelayNovelDetail(novelId);
+        return ResponseEntity.ok(novel);
+    }
+
+    /**
      * [삭제] 특정 릴레이 소설 강제 삭제
      */
     @DeleteMapping("/relay-novels/{relayNovelId}")
@@ -57,8 +70,7 @@ public class AdminRelayController {
     }
 
     /**
-     * 🌟 [신규 조회] 유저들이 개설한 자유 주제 목록 가져오기
-     * API: GET /api/admin/user-topics
+     * [조회] 유저들이 개설한 자유 주제 목록 가져오기
      */
     @GetMapping("/user-topics")
     public ResponseEntity<List<RelayTopic>> getUserTopicList() {
@@ -67,32 +79,21 @@ public class AdminRelayController {
     }
 
     // ==========================================
-    // 3. 관리자 공식 주제(AdminRelayTopic) 관리 API (🌟 개편됨)
+    // 3. 관리자 공식 주제(AdminRelayTopic) 관리 API
     // ==========================================
 
-    /**
-     * [조회] 관리자가 등록한 모든 '공식 주제' 목록 가져오기
-     */
     @GetMapping("/relay-topics")
     public ResponseEntity<List<AdminRelayTopic>> getAdminTopicList() {
-        // 반환 타입이 RelayTopic -> AdminRelayTopic 으로 변경되었습니다.
         List<AdminRelayTopic> topics = adminRelayService.getAdminTopicList();
         return ResponseEntity.ok(topics);
     }
 
-    /**
-     * [생성] 새로운 '공식 주제' 등록
-     */
     @PostMapping("/relay-topics")
     public ResponseEntity<Void> registerAdminTopic(@RequestBody AdminTopicRequest request) {
-        // 리액트에서 보낸 title과 description을 서비스로 넘깁니다.
         adminRelayService.registerAdminTopic(request.getTitle(), request.getDescription());
         return ResponseEntity.ok().build();
     }
 
-    /**
-     * [삭제] 지정된 '공식 주제' 삭제
-     */
     @DeleteMapping("/relay-topics/{adminTopicId}")
     public ResponseEntity<Void> deleteAdminTopic(@PathVariable Long adminTopicId) {
         adminRelayService.deleteAdminTopic(adminTopicId);
@@ -100,15 +101,31 @@ public class AdminRelayController {
     }
 
     // ==========================================
-    // Request DTO (클라이언트가 보내는 데이터를 담는 상자)
+    // 4. 🌟 [수정됨] 릴레이 회차 강제 블라인드 API
+    // ==========================================
+    // 1. 리액트에서 PUT으로 보내므로 @PutMapping으로 변경
+    // 2. 클래스 상단의 /api/admin 과 합쳐져서 최종 주소가 /api/admin/relay-entries/{entryId}/blind 가 됩니다.
+    @PutMapping("/relay-entries/{entryId}/blind")
+    public ResponseEntity<?> blindRelay(@PathVariable Long entryId, @RequestBody Map<String, String> request) {
+        // 3. 리액트에서 "adminMessage" 라는 이름표로 데이터를 보내므로 그것을 꺼냅니다.
+        String adminMessage = request.get("adminMessage");
+
+        // 서비스 호출 (서비스 단의 파라미터는 기존에 작성하신 대로 넘깁니다)
+        adminRelayService.blindRelayEpisode(entryId, adminMessage);
+
+        return ResponseEntity.ok().build();
+    }
+
+    // ==========================================
+    // Request DTO
     // ==========================================
 
     @Data
     public static class GuidelineRequest {
         private String content;
+        private String adminId;
     }
 
-    // 🌟 [수정] 리액트에서 제목(title)과 설명(description)을 따로 보내도록 상자 구조 변경
     @Data
     public static class AdminTopicRequest {
         private String title;

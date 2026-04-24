@@ -84,13 +84,15 @@ public class AuthController {
         return ResponseEntity.ok("회원가입 성공!");
     }
 
+
     // 5. 로그인 (검증 후 토큰 2개 발급)
     @PostMapping("/login")
     public ResponseEntity<String> login(@RequestBody LoginRequest request, HttpServletResponse response) {
         User user = authService.login(request.getUserId(), request.getPassword());
 
-        String accessToken = jwtUtil.generateAccessToken(user.getUserId(), user.getRole());
-        String refreshToken = jwtUtil.generateRefreshToken(user.getUserId(), user.getRole());
+        // 🌟 수정됨: user.getUserId() 대신 user.getId() 파라미터 2개만 전달
+        String accessToken = jwtUtil.generateAccessToken(user.getId(), user.getRole());
+        String refreshToken = jwtUtil.generateRefreshToken(user.getId(), user.getRole());
 
         Cookie cookie = new Cookie("refreshToken", refreshToken);
         cookie.setHttpOnly(true);
@@ -112,4 +114,39 @@ public class AuthController {
 
         return ResponseEntity.ok("로그아웃 성공!");
     }
+
+    // 7. 아이디 찾기 API
+    @GetMapping("/find-id")
+    public ResponseEntity<String> findId(@RequestParam String name, @RequestParam String email) {
+        String maskedId = authService.findId(name, email);
+        return ResponseEntity.ok(maskedId);
+    }
+
+    // 8. 비밀번호 재설정 메일 발송 API (기존 비번 찾기 창에서 호출)
+    @PostMapping("/password/reset-link")
+    public ResponseEntity<String> requestPasswordReset(
+            @RequestParam String userId,
+            @RequestParam String name,
+            @RequestParam String email) {
+
+        authService.generateAndSendResetToken(userId, name, email);
+        return ResponseEntity.ok("가입된 이메일로 비밀번호 재설정 링크가 발송되었습니다.");
+    }
+
+    // 9. 실제 비밀번호 변경 API (이메일 링크 타고 들어간 화면에서 호출)
+    @PostMapping("/password/reset")
+    public ResponseEntity<String> resetPassword(
+            @RequestParam String token,
+            @RequestParam String newPassword) {
+
+        authService.resetPasswordWithToken(token, newPassword);
+        return ResponseEntity.ok("비밀번호가 성공적으로 변경되었습니다.");
+    }
+    //  추가: 에러 택배 상자 해체 전담 직원 (Clean Code 예외 처리)
+    @ExceptionHandler(RuntimeException.class)
+    public ResponseEntity<String> handleRuntimeException(RuntimeException e) {
+        // 백엔드 서비스(AuthService)에서 던진 에러 메시지만 쏙 뽑아서 순수 문자열(String)로 반환합니다.
+        return ResponseEntity.badRequest().body(e.getMessage());
+    }
+
 }

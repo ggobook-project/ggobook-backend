@@ -1,11 +1,14 @@
 package com.untitled.ggobook.service;
 
 import com.untitled.ggobook.domain.Rating;
+import com.untitled.ggobook.domain.User;
 import com.untitled.ggobook.repository.ContentRepository;
 import com.untitled.ggobook.repository.RatingRepository;
+import com.untitled.ggobook.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
 
@@ -18,12 +21,15 @@ public class RatingService {
     private final RatingRepository ratingRepository;
     private final ContentRepository contentRepository;
 
-    public void submitRating(Long userId, Long contentId, Rating rating) {
+
+    // ✅ 수정 - 바로 id 사용
+    @Transactional
+    public void submitRating(Long id, Long contentId, Rating rating) {
         rating.setContent(contentRepository.findById(contentId)
                 .orElseThrow(() -> new IllegalArgumentException("작품 없음")));
-        rating.setUserId(userId);
+        rating.setId(id);
 
-        Rating existing = ratingRepository.findByUserIdAndContent_ContentId(userId, contentId);
+        Rating existing = ratingRepository.findByIdAndContent_ContentId(id, contentId);
         if (existing != null) {
             rating.setRatingId(existing.getRatingId());
             rating.setUpdatedAt(LocalDateTime.now());
@@ -31,13 +37,12 @@ public class RatingService {
 
         ratingRepository.save(rating);
     }
-
     public double getAverageRating(Long contentId) {
         return ratingRepository.findAverageByContentId(contentId) != null ? ratingRepository.findAverageByContentId(contentId) : 0.0;
     }
 
 
-    public Rating getByUserIdAndContentId(Long contentId, Long userId) {
-        return ratingRepository.findByUserIdAndContent_ContentId(userId, contentId);
+    public Rating getByIdAndContentId(Long id, Long contentId) {
+        return ratingRepository.findByIdAndContent_ContentId(id, contentId);
     }
 }
