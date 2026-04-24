@@ -9,6 +9,7 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.web.PageableDefault;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
 @RestController
@@ -24,8 +25,10 @@ public class AdminNoticeController {
     }
 
     @PostMapping
-    public ResponseEntity<Void> registerNotice(@RequestBody NoticeRequest request) {
-        Long adminId = 6L; // 추후 시큐리티 적용
+    public ResponseEntity<Void> registerNotice(
+            @RequestBody NoticeRequest request,
+            @AuthenticationPrincipal Long adminId // 🌟 이렇게 숫자(Long)로 바로 받습니다!
+    ) {
         adminNoticeService.registerNotice(request.getTitle(), request.getContent(), request.isPinned(), adminId);
         return ResponseEntity.ok().build();
     }

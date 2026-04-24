@@ -37,11 +37,20 @@ public class Notification {
 
     private String relatedUrl;
     private boolean isRead;
+    // 🌟 추가: 삭제 여부를 상태로 관리하는 컬럼 (기본값은 false)
+    @Column(name = "is_deleted", nullable = false)
+    private boolean isDeleted = false;
+
     private LocalDateTime createdAt;
 
     @PrePersist
     public void prePersist() {
         this.createdAt = LocalDateTime.now();
         this.isRead = false;
+    }
+
+    // 도메인 메서드: 상태를 '삭제됨'으로 변경
+    public void markAsDeleted() {
+        this.isDeleted = true;
     }
 }

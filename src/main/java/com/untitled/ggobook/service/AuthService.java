@@ -4,6 +4,7 @@ import com.untitled.ggobook.domain.SignupRequest;
 import com.untitled.ggobook.domain.User;
 import com.untitled.ggobook.domain.Wallet;
 import com.untitled.ggobook.repository.UserRepository;
+import com.untitled.ggobook.util.JwtUtil;
 import com.untitled.ggobook.repository.WalletRepository;
 import com.untitled.ggobook.util.JwtUtil;
 import lombok.RequiredArgsConstructor;
@@ -80,6 +81,7 @@ public class AuthService {
         User user = userRepository.findByUserId(userId)
                 .orElseThrow(() -> new RuntimeException("존재하지 않는 아이디입니다."));
 
+        // 평문 비번과 DB의 암호화된 비번 비교
         if (!passwordEncoder.matches(password, user.getPassword())) {
             throw new RuntimeException("비밀번호가 일치하지 않습니다.");
         }

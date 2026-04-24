@@ -24,7 +24,7 @@ public class AdminRelayService {
     // --- [1. 가이드라인 관리] --- (변경 없음)
     @Transactional(readOnly = true)
     public String getRelayGuideline() {
-        return guidelineRepository.findById(6L)
+        return guidelineRepository.findById(1L)
                 .map(RelayGuideline::getContent)
                 .orElse("등록된 가이드라인이 없습니다.");
     }
