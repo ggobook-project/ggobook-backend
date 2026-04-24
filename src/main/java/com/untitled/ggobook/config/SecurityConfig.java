@@ -53,7 +53,7 @@ public class SecurityConfig {
                         // (나중에 로그인 기능 완성 후 .hasRole("ADMIN")으로 다시 롤백 할 예정)
                         .requestMatchers("/api/admin/**").permitAll()
                         // 로그인 구현시 삭제 될 예정. 작품 관련 때문에 추가함. ↓
-                        .requestMatchers(HttpMethod.POST, "/api/contents/**").permitAll()
+                        .requestMatchers(HttpMethod.POST, "/api/contents/**", "/api/payments/**", "/api/points/**", "/api/wallets/**").permitAll()
                         .requestMatchers(HttpMethod.GET, "/api/**").permitAll()
                         .anyRequest().authenticated()
                 )

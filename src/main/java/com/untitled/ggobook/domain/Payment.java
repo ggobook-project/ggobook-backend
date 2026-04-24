@@ -21,7 +21,7 @@ public class Payment {
     private User user;
 
     // 포트원 고유 결제 번호
-    @Column(nullable = false, unique = true, length = 100)
+    @Column(unique = true, length = 100)
     private String impUid;
 
     // 주문 고유 번호

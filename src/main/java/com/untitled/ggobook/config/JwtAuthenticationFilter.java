@@ -26,7 +26,7 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
     protected boolean shouldNotFilter(HttpServletRequest request) throws ServletException {
         String path = request.getRequestURI();
         // 로그인, 회원가입, 이메일, 공개 컨텐츠 API는 토큰 검사 생략
-        return path.startsWith("/api/auth/") || path.startsWith("/api/contents/");
+        return path.startsWith("/api/auth/");
     }
 
     @Override
