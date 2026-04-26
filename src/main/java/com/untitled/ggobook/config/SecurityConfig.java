@@ -50,6 +50,7 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
                         .requestMatchers("/", "/index.html", "/api/auth/**", "/api/contents/**", "/error").permitAll()
                         // 🌟 프론트엔드 UI/API 연동 테스트를 위해 임시로 모든 접근 허용!
+                        // (나중에 로그인 기능 완성 후 .hasRole("ADMIN")으로 다시 롤백 할 예정)
                         .requestMatchers("/api/admin/**").hasRole("ADMIN")
                         // 로그인 구현시 삭제 될 예정. 작품 관련 때문에 추가함. ↓
                         .requestMatchers(HttpMethod.POST, "/api/contents/**", "/api/payments/**", "/api/points/**", "/api/wallets/**").permitAll()
