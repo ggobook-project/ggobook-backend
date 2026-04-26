@@ -10,6 +10,8 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+import java.util.List;
+
 // 포인트 컨트롤러
 @RestController
 @RequestMapping("/api/points")
@@ -26,4 +28,11 @@ public class PointController {
 //
 //        return ResponseEntity.ok(point);
 //    }
+    @GetMapping
+    public ResponseEntity<List<Point>> getPointHistory(
+            @AuthenticationPrincipal Long id
+    ) {
+        return ResponseEntity.ok(pointService.getPointHistory(id));
+    }
+
 }
