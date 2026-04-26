@@ -5,7 +5,9 @@ import com.siot.IamportRestClient.exception.IamportResponseException;
 import com.untitled.ggobook.domain.Payment;
 import com.untitled.ggobook.service.PaymentService;
 import lombok.RequiredArgsConstructor;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.orm.ObjectOptimisticLockingFailureException;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
@@ -37,7 +39,14 @@ public class PaymentController {
     ) throws IamportResponseException, IOException {
         String impUid = (String) request.get("impUid");
         String merchantUid = (String) request.get("merchantUid");
-        paymentService.verifyPayment(id, impUid, merchantUid);
+
+        try {
+            paymentService.verifyPayment(id, impUid, merchantUid);
+        } catch (ObjectOptimisticLockingFailureException e) {
+            // 동시 요청 충돌 - 클라이언트에게 재시도 요청
+            return ResponseEntity.status(HttpStatus.CONFLICT)
+                    .body("잠시 후 다시 시도해주세요.");
+        }
 
         return ResponseEntity.ok("포인트 충전이 완료되었습니다.");
     }

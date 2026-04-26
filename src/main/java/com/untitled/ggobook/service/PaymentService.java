@@ -55,37 +55,52 @@ public class PaymentService {
         payment.setUser(user);
         payment.setStatus("PENDING");
         payment.setAmount(amount);
+        payment.setPointAmount(amount);
         payment.setMerchantUid(merchantUid);
         payment.setWallet(wallet);
+        payment.setPaymentMethod("CARD");
 
 
         return paymentRepository.save(payment);
     }
 
     private String generateMerchantUid() {
-        String uniqueString = UUID.randomUUID().toString().replace("-", "");
-        LocalDateTime today = LocalDateTime.now();
-        DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd");
-        String formattedDay = today.format(formatter).replace("-", "");
+        String uniqueString = UUID.randomUUID().toString().replace("-", "").substring(0, 20);
+        String formattedDay = LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyyMMdd"));
 
         return formattedDay + '-' + uniqueString;
     }
 
+    @Value("${portone.test-mode:false}")
+    private boolean testMode;
+
     @Transactional
     public void verifyPayment(Long id, String impUid, String merchantUid) throws IamportResponseException, IOException {
 
-        IamportClient iamportClient = new IamportClient(apiKey, apiSecret);
-        IamportResponse<com.siot.IamportRestClient.response.Payment> response = iamportClient.paymentByImpUid(impUid);
-        com.siot.IamportRestClient.response.Payment payment = response.getResponse();
-
-        Payment paymentOur = paymentRepository.findByMerchantUid(merchantUid);
-
-        if(!payment.getAmount().equals(BigDecimal.valueOf(paymentOur.getAmount()))){
-            paymentOur.setStatus("FAILED");
-            paymentRepository.save(paymentOur);
-            throw new RuntimeException("결제 금액 불일치!");
+        // Payment 행 락 획득
+        Payment paymentOur = paymentRepository.findByMerchantUidWithLock(merchantUid);
+        if (paymentOur == null) {
+            throw new RuntimeException("결제 정보를 찾을 수 없습니다: " + merchantUid);
         }
 
+        // 중복 처리 방지 (이미 완료된 결제 재요청 차단)
+        if ("COMPLETE".equals(paymentOur.getStatus())) {
+            return;
+        }
+
+        if (!testMode) {
+            IamportClient iamportClient = new IamportClient(apiKey, apiSecret);
+            IamportResponse<com.siot.IamportRestClient.response.Payment> response = iamportClient.paymentByImpUid(impUid);
+            com.siot.IamportRestClient.response.Payment payment = response.getResponse();
+
+            if (!payment.getAmount().equals(BigDecimal.valueOf(paymentOur.getAmount()))) {
+                paymentOur.setStatus("FAILED");
+                paymentRepository.save(paymentOur);
+                throw new RuntimeException("결제 금액 불일치!");
+            }
+        }
+
+        // Wallet 행 락 획득 후 잔액 업데이트
         Wallet wallet = paymentOur.getWallet();
         wallet.setBalance(wallet.getBalance() + paymentOur.getAmount());
         walletRepository.save(wallet);
@@ -100,8 +115,6 @@ public class PaymentService {
         point.setUser(userRepository.findById(id).orElseThrow(() -> new RuntimeException("User가 존재하지 않습니다.")));
         point.setWallet(wallet);
         point.setDescription("포인트 충전");
-
         pointRepository.save(point);
-
     }
 }
