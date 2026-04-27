@@ -26,7 +26,7 @@ public class Payment {
     private String impUid;
 
     // 주문 고유 번호
-    @Column(nullable = false, unique = true, length = 100)
+    @Column(unique = true, length = 100)
     private String merchantUid;
 
     // 결제 수단 (CARD / KAKAO / TOSS)

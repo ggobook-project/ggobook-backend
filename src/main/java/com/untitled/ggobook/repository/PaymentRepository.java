@@ -11,4 +11,6 @@ public interface PaymentRepository extends JpaRepository<Payment, Long> {
     @Lock(LockModeType.PESSIMISTIC_WRITE)
     @Query("SELECT p FROM Payment p WHERE p.merchantUid = :merchantUid")
     Payment findByMerchantUidWithLock(@Param("merchantUid") String merchantUid);
+
+    Payment findByMerchantUid(String merchantUid);
 }

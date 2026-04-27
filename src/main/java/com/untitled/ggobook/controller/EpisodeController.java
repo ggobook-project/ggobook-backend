@@ -70,8 +70,15 @@ public class EpisodeController {
         episodeService.deleteEpisode(episodeId);
     }
 
-    // ... 기존 코드 생략 ...
 
+    @PostMapping("/episodes/{episodeId}/purchase")
+    public ResponseEntity<String> purchaseEpisode(
+            @AuthenticationPrincipal Long id,
+            @PathVariable Long episodeId
+    ) {
+        episodeService.purchaseEpisode(id, episodeId);
+        return ResponseEntity.ok("구매 완료");
+    }
     // 🌟 추가: 회차 좋아요 토글 API
     @PostMapping("/episodes/{episodeId}/likes")
     public ResponseEntity<String> toggleEpisodeLike(

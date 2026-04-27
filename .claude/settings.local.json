@@ -1,0 +1,7 @@
+{
+  "permissions": {
+    "allow": [
+      "mcp__claude-buddy__buddy_show"
+    ]
+  }
+}
