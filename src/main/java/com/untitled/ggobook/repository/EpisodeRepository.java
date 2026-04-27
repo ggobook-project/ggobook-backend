@@ -47,4 +47,8 @@ public interface EpisodeRepository extends JpaRepository<Episode, Long> {
     // 예약 업로드 스케줄러에서 사용 (승인되었으나 아직 발행 전인 목록)
     @Query("SELECT e FROM Episode e WHERE e.status = 'APPROVED' AND e.scheduledAt <= CURRENT_TIMESTAMP")
     List<Episode> findPendingPublishing();
+
+    // TTS 일괄 생성용: novel이 있는 에피소드만 가져오기
+    @Query("SELECT e FROM Episode e JOIN FETCH e.novel WHERE e.content.contentId = :contentId")
+    List<Episode> findAllWithNovelByContentId(@Param("contentId") Long contentId);
 }

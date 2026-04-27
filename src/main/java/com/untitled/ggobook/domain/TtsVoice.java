@@ -20,6 +20,10 @@ public class TtsVoice {
     @Column(nullable = false, length = 100)
     private String voiceName;
 
+    // GOOGLE / NAVER
+    @Column(length = 20)
+    private String provider = "GOOGLE";
+
     // MALE / FEMALE
     @Column(nullable = false, length = 20)
     private String voiceType;
@@ -37,6 +41,14 @@ public class TtsVoice {
     // 기본 제공 목소리 여부
     @Column(nullable = false)
     private Boolean isDefault = false;
+
+    // 음높이 조정 (-20.0 ~ 20.0, 기본 0.0) - 귀여운 목소리는 높은 값 사용
+    @Column(columnDefinition = "DOUBLE DEFAULT 0.0")
+    private Double pitch = 0.0;
+
+    // 말하기 속도 (0.25 ~ 4.0, 기본 1.0)
+    @Column(columnDefinition = "DOUBLE DEFAULT 1.0")
+    private Double speakingRate = 1.0;
 
     @Column(nullable = false)
     private LocalDateTime createdAt = LocalDateTime.now();
