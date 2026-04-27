@@ -13,6 +13,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
 
@@ -29,12 +30,34 @@ public class EpisodeService {
     private final WalletRepository walletRepository;
     private final OwnedContentRepository ownedContentRepository;
     private final PointRepository pointRepository;
+    private final ReadingRepository readingRepository;
     private final EpisodeLikeRepository episodeLikeRepository;
 
+    // 기존 에피소드 디테일 조회 - 관리자/비로그인용
     @Transactional(readOnly = true)
     public Episode getEpisodeDetail(Long episodeId) {
         return episodeRepository.findByIdWithDetails(episodeId)
                 .orElseThrow(() -> new IllegalArgumentException("해당 회차를 찾을 수 없습니다."));
+    }
+
+    @Transactional
+    public Episode getEpisodeDetail(Long episodeId, Long id) {
+
+        Episode episode = episodeRepository.findByIdWithDetails(episodeId)
+                .orElseThrow(() -> new IllegalArgumentException("해당 회차를 찾을 수 없습니다."));
+        if(id != null) {
+            Reading reading = readingRepository
+                    .findByUserIdAndContent(id, episode.getContent())
+                    .orElse(new Reading());
+            reading.setEpisode(episode);
+            reading.setUserId(id);
+            reading.setContent(episode.getContent());
+            reading.setUpdatedAt(LocalDateTime.now());
+            readingRepository.save(reading);
+        }
+
+
+        return episode;
     }
 
     public Slice<Episode> getEpisodeList(Long contentId, Pageable pageable, String currentNeedStatus) {
