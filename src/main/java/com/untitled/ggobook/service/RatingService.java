@@ -1,48 +1,59 @@
 package com.untitled.ggobook.service;
 
+import com.untitled.ggobook.domain.Content;
 import com.untitled.ggobook.domain.Rating;
-import com.untitled.ggobook.domain.User;
+import com.untitled.ggobook.dto.RatingRequestDto;
+import com.untitled.ggobook.dto.RatingResponseDto;
 import com.untitled.ggobook.repository.ContentRepository;
 import com.untitled.ggobook.repository.RatingRepository;
-import com.untitled.ggobook.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
+import java.util.Optional;
 
-// 별점 서비스
 @Service
-@Slf4j
 @RequiredArgsConstructor
 public class RatingService {
 
     private final RatingRepository ratingRepository;
-    private final ContentRepository contentRepository;
+    private final ContentRepository contentRepository; // 작품 유무 확인용
 
-
-    // ✅ 수정 - 바로 id 사용
+    // 1. 별점 등록 및 수정 (Upsert: 없으면 Insert, 있으면 Update)
     @Transactional
-    public void submitRating(Long id, Long contentId, Rating rating) {
-        rating.setContent(contentRepository.findById(contentId)
-                .orElseThrow(() -> new IllegalArgumentException("작품 없음")));
-        rating.setId(id);
+    public void upsertRating(Long contentId, Long userId, RatingRequestDto requestDto) {
+        Content content = contentRepository.findById(contentId)
+                .orElseThrow(() -> new IllegalArgumentException("존재하지 않는 작품입니다."));
 
-        Rating existing = ratingRepository.findByIdAndContent_ContentId(id, contentId);
-        if (existing != null) {
-            rating.setRatingId(existing.getRatingId());
+        Optional<Rating> existingRating = ratingRepository.findByContent_ContentIdAndId(contentId, userId);
+
+        if (existingRating.isPresent()) {
+            // 이미 별점을 줬다면 점수만 덮어쓰기 (JPA 더티 체킹)
+            Rating rating = existingRating.get();
+            rating.setScore(requestDto.getScore());
             rating.setUpdatedAt(LocalDateTime.now());
+        } else {
+            // 처음 주는 별점이라면 새로 생성
+            Rating newRating = new Rating();
+            newRating.setContent(content);
+            newRating.setId(userId); // 팀장님 엔티티의 유저 ID 필드명
+            newRating.setScore(requestDto.getScore());
+            ratingRepository.save(newRating);
         }
-
-        ratingRepository.save(rating);
     }
+
+    // 2. 작품 평균 별점 조회
+    @Transactional(readOnly = true)
     public double getAverageRating(Long contentId) {
-        return ratingRepository.findAverageByContentId(contentId) != null ? ratingRepository.findAverageByContentId(contentId) : 0.0;
+        return Math.round(ratingRepository.getAverageScoreByContentId(contentId) * 10) / 10.0; // 소수점 첫째 자리까지 반올림
     }
 
-
-    public Rating getByIdAndContentId(Long id, Long contentId) {
-        return ratingRepository.findByIdAndContent_ContentId(id, contentId);
+    // 3. 내 별점 조회
+    @Transactional(readOnly = true)
+    public RatingResponseDto getMyRating(Long contentId, Long userId) {
+        return ratingRepository.findByContent_ContentIdAndId(contentId, userId)
+                .map(rating -> new RatingResponseDto(rating.getScore()))
+                .orElse(new RatingResponseDto(0.0)); // 없으면 0점 반환
     }
 }

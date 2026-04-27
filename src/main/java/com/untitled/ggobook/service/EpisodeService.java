@@ -1,11 +1,9 @@
 package com.untitled.ggobook.service;
 
-import com.untitled.ggobook.domain.ComicToon;
-import com.untitled.ggobook.domain.Content;
-import com.untitled.ggobook.domain.Episode;
-import com.untitled.ggobook.domain.Novel;
+import com.untitled.ggobook.domain.*;
 import com.untitled.ggobook.domain.enums.Status;
 import com.untitled.ggobook.repository.ComicToonRepository;
+import com.untitled.ggobook.repository.EpisodeLikeRepository;
 import com.untitled.ggobook.repository.EpisodeRepository;
 import com.untitled.ggobook.repository.NovelRepository;
 import com.untitled.ggobook.util.FileUtil;
@@ -18,6 +16,7 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.util.List;
+import java.util.Optional;
 
 // 회차 서비스
 @Service
@@ -28,6 +27,7 @@ public class EpisodeService {
     private final ComicToonRepository comicToonRepository;
     private final NovelRepository novelRepository;
     private final FileUtil fileUtil;
+    private final EpisodeLikeRepository episodeLikeRepository;
 
     @Transactional(readOnly = true)
     public Episode getEpisodeDetail(Long episodeId) {
@@ -117,5 +117,28 @@ public class EpisodeService {
         comicToonRepository.deleteAll(comicToons);
 
         episodeRepository.delete(episode);
+    }
+
+    @Transactional
+    public void toggleEpisodeLike(Long userId, Long episodeId) {
+        Episode episode = episodeRepository.findById(episodeId)
+                .orElseThrow(() -> new IllegalArgumentException("회차 찾을 수 없음"));
+
+        Optional<EpisodeLike> existing = episodeLikeRepository.findByUserIdAndEpisode(userId, episode);
+
+        if (existing.isEmpty()) {
+            episodeLikeRepository.save(EpisodeLike.builder().userId(userId).episode(episode).build());
+            episode.increaseLikeCount();
+        } else {
+            episodeLikeRepository.delete(existing.get());
+            episode.decreaseLikeCount();
+        }
+    }
+    @Transactional(readOnly = true)
+    public boolean checkEpisodeLike(Long userId, Long episodeId) {
+        Episode episode = episodeRepository.findById(episodeId)
+                .orElseThrow(() -> new IllegalArgumentException("회차 없음"));
+        // 내 이름이 방명록(EpisodeLike)에 있는지 확인해서 true/false 반환
+        return episodeLikeRepository.findByUserIdAndEpisode(userId, episode).isPresent();
     }
 }

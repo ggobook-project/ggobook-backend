@@ -1,12 +1,12 @@
 package com.untitled.ggobook.controller;
 
-import com.untitled.ggobook.domain.Rating;
+import com.untitled.ggobook.dto.RatingRequestDto;
+import com.untitled.ggobook.dto.RatingResponseDto;
 import com.untitled.ggobook.service.RatingService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
-// 별점 컨트롤러
 @RestController
 @RequestMapping("/api/ratings")
 @RequiredArgsConstructor
@@ -14,32 +14,30 @@ public class RatingController {
 
     private final RatingService ratingService;
 
-    @PostMapping("/{contentId}")
-    public ResponseEntity<String> submitRating(
-            @RequestParam("id") Long id,
-            @PathVariable Long contentId,
-            @RequestBody Rating rating
-    ) {
-
-        ratingService.submitRating(id, contentId, rating);
-
-        return ResponseEntity.ok("별점 업로드 성공");
-
-    }
-
+    // 1. 평균 별점 조회 (리액트의 loadAverageRating)
     @GetMapping("/{contentId}")
-    public double getAverageRating(@PathVariable Long contentId){
-
-        return ratingService.getAverageRating(contentId);
-
+    public ResponseEntity<Double> getAverageRating(@PathVariable Long contentId) {
+        double averageScore = ratingService.getAverageRating(contentId);
+        return ResponseEntity.ok(averageScore);
     }
 
-    @GetMapping("/{contentId}/users/{id}")
-    public Rating getRating(
+    // 2. 내 별점 조회 (리액트의 loadMyRating)
+    @GetMapping("/{contentId}/users/{userId}")
+    public ResponseEntity<RatingResponseDto> getMyRating(
             @PathVariable Long contentId,
-            @PathVariable Long id
-    ){
-        System.out.println("백엔드 들어옴");
-        return ratingService.getByIdAndContentId(id, contentId);
+            @PathVariable Long userId) {
+        RatingResponseDto response = ratingService.getMyRating(contentId, userId);
+        return ResponseEntity.ok(response);
+    }
+
+    // 3. 별점 등록 및 수정 (리액트의 handleRatingConfirm)
+    // 주의: 프론트엔드에서 ?userId=xx 형태로 쿼리스트링으로 보내고 있어서 @RequestParam 사용
+    @PostMapping("/{contentId}")
+    public ResponseEntity<String> saveRating(
+            @PathVariable Long contentId,
+            @RequestParam Long userId,
+            @RequestBody RatingRequestDto requestDto) {
+        ratingService.upsertRating(contentId, userId, requestDto);
+        return ResponseEntity.ok("별점 저장 성공");
     }
 }
