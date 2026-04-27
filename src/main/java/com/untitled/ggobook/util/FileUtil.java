@@ -10,6 +10,7 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
+import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.URLDecoder;
@@ -49,6 +50,19 @@ public class FileUtil {
             throw new RuntimeException("S3 파일 업로드 실패", e);
 
         }
+    }
+
+    public String uploadAudioToS3(byte[] audioData) {
+        String fileName = "tts/" + UUID.randomUUID() + ".mp3";
+        ByteArrayInputStream inputStream = new ByteArrayInputStream(audioData);
+
+        ObjectMetadata metadata = new ObjectMetadata();
+        metadata.setContentType("audio/mpeg");
+        metadata.setContentLength(audioData.length);
+
+        amazonS3.putObject(bucket, fileName, inputStream, metadata);
+
+        return "https://s3.ap-northeast-2.amazonaws.com/" + bucket + "/" + fileName;
     }
 
     public String deleteFromS3(String fileName){

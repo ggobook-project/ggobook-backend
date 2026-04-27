@@ -58,6 +58,9 @@ dependencies {
 
 	// PortOne 사용을 위한 서버 SDK 설정
 	implementation 'io.portone:server-sdk:0.23.0'
+
+	// Google Cloud Text-to-Speech
+	implementation 'com.google.cloud:google-cloud-texttospeech:2.48.0'
 }
 
 tasks.named('test') {
