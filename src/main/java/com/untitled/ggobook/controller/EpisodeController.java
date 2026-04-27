@@ -36,8 +36,15 @@ public class EpisodeController {
     }
 
     @GetMapping("/episodes/{episodeId}")
-    public Episode getEpisodeDetail(@PathVariable Long episodeId){
-        return episodeService.getEpisodeDetail(episodeId);
+    public Episode getEpisodeDetail(
+            @PathVariable Long episodeId,
+            @AuthenticationPrincipal Object principal
+    ){
+        Long id = null;
+        if (principal instanceof Long) {
+            id = (Long) principal;
+        }
+        return episodeService.getEpisodeDetail(episodeId, id);
     }
 
     @PostMapping("/contents/{contentId}/episodes")

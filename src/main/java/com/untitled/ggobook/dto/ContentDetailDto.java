@@ -14,7 +14,7 @@ public class ContentDetailDto {
     private String genre;
     private String summary;
     private String thumbnailUrl;
-    private Slice<Episode> episodes;
+    private Slice<EpisodeDetailDto> episodes;
 
     //이 유저가 이 작품을 찜했는지 여부 추가
     private boolean isLiked;
