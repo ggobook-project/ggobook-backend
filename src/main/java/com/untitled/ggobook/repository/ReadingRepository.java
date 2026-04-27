@@ -9,4 +9,6 @@ import java.util.Optional;
 
 public interface ReadingRepository extends JpaRepository<Reading, Long> {
     Optional<Reading> findByUserIdAndContent(Long id, Content content);
+
+    boolean existsByUserIdAndEpisode_EpisodeId(Long userId, Long episodeId);
 }
