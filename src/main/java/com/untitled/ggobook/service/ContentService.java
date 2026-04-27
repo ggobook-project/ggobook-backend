@@ -28,6 +28,7 @@ public class ContentService {
     private final FileUtil fileUtil;
     private final LikeRepository likeRepository;
 
+    @Transactional
     public Slice<Content> getContentList(String keyword, String genre, String type, Pageable pageable) {
         String searchKeyword = (keyword == null || keyword.isBlank()) ? null : keyword;
         String searchGenre = (genre == null || genre.isBlank()) ? null : genre;
@@ -96,7 +97,7 @@ public class ContentService {
         contentRepository.deleteById(contentId);
     }
 
-
+    @Transactional
     public Content getContentByContentID(Long contentId) {
         return contentRepository.findById(contentId)
                 .orElseThrow(() -> new IllegalArgumentException("작품 없음"));

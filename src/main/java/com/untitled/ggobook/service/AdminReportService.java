@@ -20,6 +20,7 @@ public class AdminReportService {
     private final UserRepository userRepository;
 
     // 관리자 엔티티 조회 공통 메서드
+    @Transactional
     private User getAdmin(Long adminId) {
         return userRepository.findById(adminId)
                 .orElseThrow(() -> new IllegalArgumentException("관리자 정보를 찾을 수 없습니다."));

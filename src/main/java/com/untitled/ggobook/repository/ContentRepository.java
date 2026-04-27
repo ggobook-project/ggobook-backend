@@ -1,8 +1,10 @@
 package com.untitled.ggobook.repository;
 
 import com.untitled.ggobook.domain.Content;
+import com.untitled.ggobook.domain.Episode;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Slice;
+import org.springframework.data.jpa.repository.EntityGraph;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
@@ -41,4 +43,12 @@ public interface ContentRepository extends JpaRepository<Content, Long> {
             "LEFT JOIN FETCH c.episodes " +
             "WHERE c.contentId = :contentId")
     Optional<Content> findByIdWithEpisodes(@Param("contentId") Long contentId);
+
+    @EntityGraph(attributePaths = {"author"})
+    List<Content> findByTypeOrderByContentIdDesc(String type);
+
+    List<Content> findByTypeAndTitleContainingOrTypeAndAuthor_NicknameContainingOrderByContentIdDesc(
+            String type1, String title, String type2, String nickname
+    );
+
 }
