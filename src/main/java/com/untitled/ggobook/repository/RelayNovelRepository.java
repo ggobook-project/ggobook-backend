@@ -5,6 +5,9 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
+
+import java.util.Optional;
 
 public interface RelayNovelRepository extends JpaRepository<RelayNovel, Long> {
 
@@ -21,5 +24,8 @@ public interface RelayNovelRepository extends JpaRepository<RelayNovel, Long> {
             "GROUP BY r.relayNovelId " +
             "ORDER BY COUNT(e) DESC, r.title ASC")
     Page<RelayNovel> findAllOrderByEntryCountDescAndTitleAsc(Pageable pageable);
+
+    @Query("SELECT n FROM RelayNovel n LEFT JOIN FETCH n.entries WHERE n.relayNovelId = :id")
+    Optional<RelayNovel> findByIdWithEntries(@Param("id") Long id);
 
 }
