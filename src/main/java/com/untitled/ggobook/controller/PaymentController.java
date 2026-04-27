@@ -25,10 +25,11 @@ public class PaymentController {
     @PostMapping("/prepare")
     public ResponseEntity<Payment> preparePayment(
             @AuthenticationPrincipal Long id,
-            @RequestParam Integer amount
+            @RequestParam Integer amount,
+            @RequestParam Integer pointAmount
     ) {
 
-        Payment payment = paymentService.preparePayment(id, amount);
+        Payment payment = paymentService.preparePayment(id, amount, pointAmount);
         return ResponseEntity.ok(payment);
     }
 
@@ -51,4 +52,23 @@ public class PaymentController {
         return ResponseEntity.ok("포인트 충전이 완료되었습니다.");
     }
 
+    @PostMapping("/webhook")
+    public ResponseEntity<String> webhook(
+            @RequestBody Map<String, Object> request
+    ) {
+        String impUid = (String) request.get("imp_uid");
+        String merchantUid = (String) request.get("merchant_uid");
+        String status = (String) request.get("status");
+        paymentService.handleWebhook(impUid, merchantUid, status);
+        return ResponseEntity.ok("ok");
+    }
+
+    @PostMapping("/{paymentId}/cancel")
+    public ResponseEntity<String> cancelPayment(
+            @AuthenticationPrincipal Long id,
+            @PathVariable Long paymentId
+    ) throws IamportResponseException, IOException {
+        paymentService.cancelPayment(id, paymentId);
+        return ResponseEntity.ok("결제가 취소되었습니다.");
+    }
 }

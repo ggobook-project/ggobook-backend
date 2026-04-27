@@ -11,6 +11,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Slice;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -70,4 +71,12 @@ public class EpisodeController {
     }
 
 
+    @PostMapping("/episodes/{episodeId}/purchase")
+    public ResponseEntity<String> purchaseEpisode(
+            @AuthenticationPrincipal Long id,
+            @PathVariable Long episodeId
+    ) {
+        episodeService.purchaseEpisode(id, episodeId);
+        return ResponseEntity.ok("구매 완료");
+    }
 }

@@ -1,13 +1,9 @@
 package com.untitled.ggobook.service;
 
-import com.untitled.ggobook.domain.ComicToon;
-import com.untitled.ggobook.domain.Content;
-import com.untitled.ggobook.domain.Episode;
-import com.untitled.ggobook.domain.Novel;
+import com.untitled.ggobook.controller.PointController;
+import com.untitled.ggobook.domain.*;
 import com.untitled.ggobook.domain.enums.Status;
-import com.untitled.ggobook.repository.ComicToonRepository;
-import com.untitled.ggobook.repository.EpisodeRepository;
-import com.untitled.ggobook.repository.NovelRepository;
+import com.untitled.ggobook.repository.*;
 import com.untitled.ggobook.util.FileUtil;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -28,6 +24,10 @@ public class EpisodeService {
     private final ComicToonRepository comicToonRepository;
     private final NovelRepository novelRepository;
     private final FileUtil fileUtil;
+    private final UserRepository userRepository;
+    private final WalletRepository walletRepository;
+    private final OwnedContentRepository ownedContentRepository;
+    private final PointRepository pointRepository;
 
     @Transactional(readOnly = true)
     public Episode getEpisodeDetail(Long episodeId) {
@@ -117,5 +117,45 @@ public class EpisodeService {
         comicToonRepository.deleteAll(comicToons);
 
         episodeRepository.delete(episode);
+    }
+
+    @Transactional
+    public void purchaseEpisode(Long id, Long episodeId) {
+
+        User user = userRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("유저가 존재하지 않습니다."));
+
+        Wallet wallet = walletRepository.findByUserId(id)
+                .orElseThrow(() -> new RuntimeException("Wallet이 존재하지 않습니다."));
+
+        Episode episode = episodeRepository.findById(episodeId)
+                .orElseThrow(() -> new RuntimeException("회차가 존재하지 않습니다."));
+
+        if (ownedContentRepository.existsByUserIdAndEpisode(id, episode)) {
+            throw new RuntimeException("이미 구매한 회차입니다.");
+        }
+
+
+        int EPISODE_PRICE = 200;
+        if (wallet.getBalance() < EPISODE_PRICE) {
+            throw new RuntimeException("포인트가 부족합니다.");
+        }
+
+        wallet.setBalance(wallet.getBalance() - EPISODE_PRICE);
+        walletRepository.save(wallet);
+
+        Point point = new Point();
+        point.setUser(user);
+        point.setWallet(wallet);
+        point.setPointType("DEDUCT");
+        point.setAmount(EPISODE_PRICE);
+        point.setDescription("작품 소장 - " + episode.getEpisodeTitle());
+        pointRepository.save(point);
+
+        OwnedContent ownedContent = new OwnedContent();
+        ownedContent.setUserId(id);
+        ownedContent.setContent(episode.getContent());
+        ownedContent.setEpisode(episode);
+        ownedContentRepository.save(ownedContent);
     }
 }
