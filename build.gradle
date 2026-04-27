@@ -15,6 +15,7 @@ java {
 
 repositories {
 	mavenCentral()
+	maven { url 'https://jitpack.io' }
 }
 
 dependencies {
@@ -57,10 +58,11 @@ dependencies {
 	implementation 'org.springframework.boot:spring-boot-starter-oauth2-client'
 
 	// PortOne 사용을 위한 서버 SDK 설정
-	implementation 'io.portone:server-sdk:0.23.0'
+
 
 	// Google Cloud Text-to-Speech
 	implementation 'com.google.cloud:google-cloud-texttospeech:2.48.0'
+	implementation 'com.github.iamport:iamport-rest-client-java:0.2.23'
 }
 
 tasks.named('test') {

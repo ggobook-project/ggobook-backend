@@ -85,27 +85,51 @@ public class AuthController {
     }
 
 
-    // 5. 로그인 (검증 후 토큰 2개 발급)
+    // 🌟 5. 로그인 (AuthService의 Redis 로직 적용)
     @PostMapping("/login")
     public ResponseEntity<String> login(@RequestBody LoginRequest request, HttpServletResponse response) {
         User user = authService.login(request.getUserId(), request.getPassword());
 
-        // 🌟 수정됨: user.getUserId() 대신 user.getId() 파라미터 2개만 전달
         String accessToken = jwtUtil.generateAccessToken(user.getId(), user.getRole());
         String refreshToken = jwtUtil.generateRefreshToken(user.getId(), user.getRole());
 
+        // Redis에 Refresh Token 안전하게 보관!
+        authService.saveRefreshToken(user.getId(), refreshToken);
+
         Cookie cookie = new Cookie("refreshToken", refreshToken);
-        cookie.setHttpOnly(true);
+        cookie.setHttpOnly(true); // 자바스크립트로 탈취 불가 (XSS 방어)
         cookie.setPath("/");
-        cookie.setMaxAge(7 * 24 * 60 * 60);
+        cookie.setMaxAge(15 * 60 * 60);
         response.addCookie(cookie);
 
         return ResponseEntity.ok(accessToken);
     }
 
-    // 6. 로그아웃 (쿠키 삭제)
+    // 🌟 5-1. 대기업 무한 로그인 비밀 API (Access Token 재발급)
+    @PostMapping("/refresh")
+    public ResponseEntity<String> refresh(@CookieValue(value = "refreshToken", required = false) String refreshToken) {
+        // 프론트엔드가 보낸 쿠키에 연장권이 없으면 입구컷!
+        if (refreshToken == null) {
+            return ResponseEntity.status(401).body("리프레시 토큰이 없습니다. 다시 로그인해주세요.");
+        }
+
+        // AuthService를 통해 새 Access Token을 받아옵니다.
+        String newAccessToken = authService.refreshAccessToken(refreshToken, jwtUtil);
+        return ResponseEntity.ok(newAccessToken);
+    }
+
+    // 🌟 6. 로그아웃 (쿠키 삭제 + Redis 파기)
     @PostMapping("/logout")
-    public ResponseEntity<String> logout(HttpServletResponse response) {
+    public ResponseEntity<String> logout(
+            @CookieValue(value = "refreshToken", required = false) String refreshToken,
+            HttpServletResponse response) {
+
+        // Redis에서 토큰을 지워버려 남은 연장권 무효화
+        if (refreshToken != null && jwtUtil.validateToken(refreshToken)) {
+            Long userId = jwtUtil.getIdFromToken(refreshToken);
+            authService.deleteRefreshToken(userId);
+        }
+
         Cookie cookie = new Cookie("refreshToken", null);
         cookie.setHttpOnly(true);
         cookie.setPath("/");
@@ -148,5 +172,6 @@ public class AuthController {
         // 백엔드 서비스(AuthService)에서 던진 에러 메시지만 쏙 뽑아서 순수 문자열(String)로 반환합니다.
         return ResponseEntity.badRequest().body(e.getMessage());
     }
+
 
 }

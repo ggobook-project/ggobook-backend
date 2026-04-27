@@ -1,8 +1,10 @@
 package com.untitled.ggobook.service;
 
 import com.untitled.ggobook.domain.User;
+import com.untitled.ggobook.domain.Wallet;
 import com.untitled.ggobook.dto.OAuth2Attribute;
 import com.untitled.ggobook.repository.UserRepository;
+import com.untitled.ggobook.repository.WalletRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -22,6 +24,7 @@ public class SocialLoginService extends DefaultOAuth2UserService {
 
     private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
+    private final WalletRepository walletRepository;
 
     @Override
     public OAuth2User loadUser(OAuth2UserRequest userRequest) throws OAuth2AuthenticationException {
@@ -72,7 +75,15 @@ public class SocialLoginService extends DefaultOAuth2UserService {
                             .role("USER")
                             .build();
 
-                    return userRepository.save(newUser);
+                    userRepository.save(newUser);
+
+                    Wallet wallet = new Wallet();
+                    wallet.setBalance(0);
+                    wallet.setUser(newUser);
+
+                    walletRepository.save(wallet);
+
+                    return newUser;
                 });
     }
 }

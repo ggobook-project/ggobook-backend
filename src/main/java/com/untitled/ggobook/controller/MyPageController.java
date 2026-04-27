@@ -64,4 +64,6 @@ public class MyPageController {
         MyPointResponseDto response = myPageService.getMyPoints(id, pageable);
         return ResponseEntity.ok(response);
     }
+
+
 }
