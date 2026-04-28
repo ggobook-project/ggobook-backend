@@ -37,6 +37,7 @@ public class UserReportService {
                 .reporter(reporter)
                 .reportedUser(reportedUser)
                 .targetId(dto.getTargetId())
+                .targetParentId(dto.getTargetParentId())
                 .targetType(dto.getTargetType())
                 .reportReason(dto.getReportReason())
                 .build();
