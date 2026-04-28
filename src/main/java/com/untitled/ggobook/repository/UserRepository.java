@@ -46,4 +46,8 @@ public interface UserRepository extends JpaRepository<User, Long> {
 
     // 3. [닉네임]으로만 검색 (관리자 제외)
     Page<User> findByNicknameContainingAndRoleNot(String nickname, String role, Pageable pageable);
+
+    long countByRole(String role);
+
+    long countByCreatedAtAfter(LocalDateTime dateTime);
 }

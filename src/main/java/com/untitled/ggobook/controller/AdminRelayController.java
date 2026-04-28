@@ -3,6 +3,7 @@ package com.untitled.ggobook.controller;
 import com.untitled.ggobook.domain.AdminRelayTopic;
 import com.untitled.ggobook.domain.RelayNovel;
 import com.untitled.ggobook.domain.RelayTopic;
+import com.untitled.ggobook.domain.enums.Status;
 import com.untitled.ggobook.dto.RelayNovelDTO;
 import com.untitled.ggobook.dto.RelayNovelListDTO;
 import com.untitled.ggobook.service.AdminRelayService;
@@ -62,13 +63,14 @@ public class AdminRelayController {
         return ResponseEntity.ok(novelDto);
     }
 
-    /**
-     * [삭제] 특정 릴레이 소설 강제 삭제
-     */
-    @DeleteMapping("/relay-novels/{relayNovelId}")
-    public ResponseEntity<Void> deleteRelayNovel(@PathVariable Long relayNovelId) {
-        adminRelayService.deleteRelayNovel(relayNovelId);
-        return ResponseEntity.noContent().build();
+    @PostMapping("/relay-novels/{novelId}/status")
+    public ResponseEntity<Void> updateNovelStatus(
+            @PathVariable Long novelId,
+            @RequestBody Map<String, String> request) { // Map으로 받기
+
+        String status = request.get("status"); // 여기서 "PRIVATE"만 예쁘게 추출됨
+        adminRelayService.updateNovelStatus(novelId, Status.valueOf(status));
+        return ResponseEntity.ok().build();
     }
 
     /**

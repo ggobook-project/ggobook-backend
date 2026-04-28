@@ -5,6 +5,7 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 
 import java.util.List;
+import java.util.Optional;
 
 @Repository
 public interface RelayEntryRepository extends JpaRepository<RelayEntry, Long> {
@@ -14,4 +15,6 @@ public interface RelayEntryRepository extends JpaRepository<RelayEntry, Long> {
 
     // 특정 유저가 쓴 릴레이 회차 목록 조회
     List<RelayEntry> findByUserId(Long userId);
+
+    Optional<RelayEntry> findTopByRelayNovel_RelayNovelIdOrderByEntryOrderDesc(Long relayNovelId);
 }

@@ -4,6 +4,8 @@ import com.untitled.ggobook.domain.enums.UserStatus;
 import com.untitled.ggobook.domain.enums.SuspensionDuration;
 import jakarta.persistence.*;
 import lombok.*;
+import org.springframework.data.annotation.CreatedDate;
+import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 
 import java.time.LocalDateTime;
 
@@ -14,6 +16,7 @@ import java.time.LocalDateTime;
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
+@EntityListeners(AuditingEntityListener.class)
 public class User {
 
     @Id
@@ -40,6 +43,10 @@ public class User {
 
     @Column(length = 20)
     private String role; // ROLE_USER, ROLE_ADMIN 등
+
+    @CreatedDate // 🌟 저장 시 자동으로 현재 시간 삽입
+    @Column(updatable = false)
+    private LocalDateTime createdAt;
 
     // ==========================================
     // 신고 및 정지 관리 필드

@@ -1,6 +1,7 @@
 package com.untitled.ggobook.domain;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import com.untitled.ggobook.domain.enums.Status;
 import jakarta.persistence.*;
 import lombok.Data;
 import lombok.ToString;
@@ -34,6 +35,10 @@ public class RelayNovel {
     @Column(columnDefinition = "TEXT")
     private String description;
 
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false, length = 20)
+    private Status status = Status.PUBLISHED;
+
     @Column(nullable = false, updatable = false)
     private LocalDateTime createdAt;
 
@@ -45,6 +50,11 @@ public class RelayNovel {
     @ToString.Exclude
     @OneToMany(mappedBy = "relayNovel", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<RelayEntry> entries = new ArrayList<>();
+
+    public void changeStatus(Status newStatus) {
+        this.status = newStatus;
+        this.updatedAt = LocalDateTime.now(); // 상태 변경 시 수정 시간 갱신
+    }
 
     @PrePersist
     public void prePersist() {

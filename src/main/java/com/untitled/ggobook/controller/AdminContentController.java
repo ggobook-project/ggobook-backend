@@ -19,10 +19,11 @@ public class AdminContentController {
     @GetMapping("/contents")
     public ResponseEntity<?> getContentsByType(
             @RequestParam String type,
-            @RequestParam(required = false) String keyword) {
+            @RequestParam(required = false) String keyword,
+            @RequestParam(required = false) String day){
 
         // 🌟 서비스 로직 하나로 모든 타입과 검색어 처리
-        return ResponseEntity.ok(adminContentService.getContentsByType(type, keyword));
+        return ResponseEntity.ok(adminContentService.getContentsByType(type, keyword, day));
     }
     /**
      * 🌟 특정 작품의 회차 목록을 가져오는 API
@@ -38,6 +39,11 @@ public class AdminContentController {
     @GetMapping("/content/{contentId}")
     public ResponseEntity<ContentBasicDTO> getContentInfo(@PathVariable Long contentId) {
         return ResponseEntity.ok(adminContentService.getContentBasicInfo(contentId));
+    }
+
+    @GetMapping("/content/episodes/{episodeId}/view")
+    public ResponseEntity<EpisodeDTO> getEpisodeView(@PathVariable Long episodeId) {
+        return ResponseEntity.ok(adminContentService.getEpisodeView(episodeId));
     }
 
     @PutMapping("/content/episodes/{episodeId}/blind")

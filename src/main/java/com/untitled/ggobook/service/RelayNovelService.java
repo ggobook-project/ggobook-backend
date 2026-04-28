@@ -1,6 +1,8 @@
 package com.untitled.ggobook.service;
 
+import com.untitled.ggobook.component.RedisLockManager;
 import com.untitled.ggobook.domain.*;
+import com.untitled.ggobook.domain.enums.Status;
 import com.untitled.ggobook.dto.EntryDTO;
 import com.untitled.ggobook.dto.RelayNovelCreateRequestDTO;
 import com.untitled.ggobook.dto.RelayNovelDTO;
@@ -25,20 +27,22 @@ public class RelayNovelService {
     private final RelayTopicRepository relayTopicRepository; // 🌟 추가
     private final RelayEntryRepository relayEntryRepository; // 🌟 추가
     private final AdminRelayTopicRepository adminRelayTopicRepository;
+    private final RedisLockManager redisLockManager;
 
     // 1. 목록 조회 (정렬 분기 처리)
     @Transactional(readOnly = true)
     public Page<RelayNovelListDTO> getRelayNovels(String sortType, Pageable pageable) {
+        // 🌟 Repository가 변경되었으므로 Status.PRIVATE을 함께 넘겨줍니다.
         Page<RelayNovel> novelPage = ("popular".equals(sortType))
-                ? relayNovelRepository.findAllOrderByEntryCountDescAndTitleAsc(pageable)
-                : relayNovelRepository.findAllByOrderByCreatedAtDesc(pageable);
+                ? relayNovelRepository.findAllOrderByEntryCountDescAndTitleAsc(Status.PRIVATE, pageable)
+                : relayNovelRepository.findByStatusNotOrderByCreatedAtDesc(Status.PRIVATE, pageable);
 
         // 1. 소설에서 모든 유저 ID를 추출 (중복 제거)
         Set<Long> userIds = novelPage.getContent().stream()
                 .map(RelayNovel::getUserId)
                 .collect(Collectors.toSet());
 
-        // 2. 닉네임들을 한 번에 조회 (Map<userId, nickname> 형태)
+        // 2. 닉네임들을 한 번에 조회
         Map<Long, String> nicknameMap = userRepository.findAllById(userIds).stream()
                 .collect(Collectors.toMap(User::getId, User::getNickname));
 
@@ -120,5 +124,54 @@ public class RelayNovelService {
         relayEntryRepository.save(firstEntry);
 
         return novel.getRelayNovelId();
+    }
+
+    // 1. [이어쓰기] 버튼 클릭 시
+    public void startWriting(Long novelId, Long userId) {
+        Boolean isLocked = redisLockManager.lock(novelId, userId);
+
+        if (!isLocked) {
+            // 🚨 초보자 주의 포인트: 여기서 예외를 던지면 컨트롤러를 거쳐 프론트엔드로 409 같은 에러 코드가 갑니다.
+            throw new IllegalStateException("현재 다른 유저가 작성 중입니다. 잠시 후 다시 시도해 주세요.");
+        }
+        // 락 획득 성공! 프론트엔드는 이제 에디터 화면으로 넘어갑니다.
+    }
+
+    // 2. [작성 완료(등록)] 버튼 클릭 시
+    @Transactional
+    public void submitEpisode(Long novelId, Long userId, String content) {
+        try {
+            // 1. 소설 확인
+            RelayNovel novel = relayNovelRepository.findById(novelId)
+                    .orElseThrow(() -> new IllegalArgumentException("소설을 찾을 수 없습니다."));
+
+            // 2. 마지막 순번 계산 (Repository 메서드 활용)
+            Integer lastOrder = relayEntryRepository.findTopByRelayNovel_RelayNovelIdOrderByEntryOrderDesc(novelId)
+                    .map(RelayEntry::getEntryOrder)
+                    .orElse(0);
+
+            // 3. 새 엔트리 생성 및 저장
+            RelayEntry newEntry = RelayEntry.builder()
+                    .relayNovel(novel)
+                    .userId(userId)
+                    .entryText(content)
+                    .entryOrder(lastOrder + 1)
+                    .build();
+
+            relayEntryRepository.save(newEntry);
+
+        } catch (Exception e) {
+            // 로그를 남겨주면 디버깅이 훨씬 쉽습니다!
+            System.err.println("에피소드 저장 실패: " + e.getMessage());
+            throw e;
+        } finally {
+            // 4. 어떤 경우에도 락은 무조건 해제!
+            redisLockManager.unlock(novelId);
+        }
+    }
+
+    // 3. [작성 취소] 버튼 클릭 또는 뒤로 가기 시
+    public void cancelWriting(Long novelId) {
+        redisLockManager.unlock(novelId);
     }
 }
