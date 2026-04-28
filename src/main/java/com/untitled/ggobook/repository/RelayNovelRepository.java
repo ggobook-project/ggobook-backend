@@ -7,6 +7,7 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
+import java.util.List;
 import java.util.Optional;
 
 public interface RelayNovelRepository extends JpaRepository<RelayNovel, Long> {
@@ -27,5 +28,11 @@ public interface RelayNovelRepository extends JpaRepository<RelayNovel, Long> {
 
     @Query("SELECT n FROM RelayNovel n LEFT JOIN FETCH n.entries WHERE n.relayNovelId = :id")
     Optional<RelayNovel> findByIdWithEntries(@Param("id") Long id);
+
+    // ==========================================
+    //  3. 마이페이지 전용: 내가 참여한 릴레이 소설 조회 (추가된 부분)
+    // ==========================================
+    @Query("SELECT DISTINCT r FROM RelayNovel r LEFT JOIN r.entries e WHERE r.userId = :userId OR e.userId = :userId ORDER BY r.createdAt DESC")
+    List<RelayNovel> findMyRelayNovels(@Param("userId") Long userId);
 
 }

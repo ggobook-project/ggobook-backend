@@ -1,6 +1,6 @@
 package com.untitled.ggobook.controller;
 
-import com.untitled.ggobook.domain.LoginRequest;
+import com.untitled.ggobook.dto.LoginRequestDto;
 import com.untitled.ggobook.domain.SignupRequest;
 import com.untitled.ggobook.domain.User;
 import com.untitled.ggobook.service.AuthService;
@@ -87,7 +87,7 @@ public class AuthController {
 
     // 🌟 5. 로그인 (AuthService의 Redis 로직 적용)
     @PostMapping("/login")
-    public ResponseEntity<String> login(@RequestBody LoginRequest request, HttpServletResponse response) {
+    public ResponseEntity<String> login(@RequestBody LoginRequestDto request, HttpServletResponse response) {
         User user = authService.login(request.getUserId(), request.getPassword());
 
         String accessToken = jwtUtil.generateAccessToken(user.getId(), user.getRole());
@@ -99,7 +99,18 @@ public class AuthController {
         Cookie cookie = new Cookie("refreshToken", refreshToken);
         cookie.setHttpOnly(true); // 자바스크립트로 탈취 불가 (XSS 방어)
         cookie.setPath("/");
-        cookie.setMaxAge(15 * 60 * 60);
+
+        // ==========================================
+        // 🌟 핵심 수술 부위: 체크박스 상태에 따라 쿠키 수명 분기 처리
+        // ==========================================
+        if (request.isKeepLoggedIn()) {
+            // 체크 O: 14일(1,209,600초) 동안 하드디스크에 살아남는 끈질긴 쿠키
+            cookie.setMaxAge(14 * 24 * 60 * 60);
+        } else {
+            // 체크 X: 브라우저 X 버튼 누르면 즉시 암살당하는 '세션 쿠키' (-1 설정)
+            cookie.setMaxAge(-1);
+        }
+
         response.addCookie(cookie);
 
         return ResponseEntity.ok(accessToken);

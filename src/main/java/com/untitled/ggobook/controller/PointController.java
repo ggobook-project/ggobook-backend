@@ -20,14 +20,6 @@ public class PointController {
 
     private final PointService pointService;
 
-//    @GetMapping("/balance")
-//    public ResponseEntity<Point> getPointBalance(
-//            @AuthenticationPrincipal Long id
-//    ) {
-//        Point point = pointService.getPointBalance(id);
-//
-//        return ResponseEntity.ok(point);
-//    }
     @GetMapping
     public ResponseEntity<List<Point>> getPointHistory(
             @AuthenticationPrincipal Long id
