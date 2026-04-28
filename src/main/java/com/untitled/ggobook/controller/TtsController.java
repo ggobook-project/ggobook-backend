@@ -31,6 +31,50 @@ public class TtsController {
         return ResponseEntity.ok(ttsService.getTtsUrl(episodeId));
     }
 
+    // 청크 정보 조회 (totalChunks + 기존 생성된 청크 URL)
+    @GetMapping("/episodes/{episodeId}/tts/chunk-info")
+    public ResponseEntity<java.util.Map<String, Object>> getChunkInfo(
+            @PathVariable Long episodeId,
+            @RequestParam Long voiceId
+    ) {
+        return ResponseEntity.ok(ttsService.getChunkInfo(episodeId, voiceId));
+    }
+
+    // 특정 청크 생성 (캐시 있으면 재사용)
+    @PostMapping("/episodes/{episodeId}/tts/chunk/{chunkIndex}")
+    public ResponseEntity<java.util.Map<String, Object>> generateChunk(
+            @PathVariable Long episodeId,
+            @PathVariable Integer chunkIndex,
+            @RequestParam Long voiceId
+    ) {
+        String url = ttsService.generateTtsChunk(episodeId, voiceId, chunkIndex);
+        return ResponseEntity.ok(java.util.Map.of("url", url, "chunkIndex", chunkIndex));
+    }
+
+    // 멀티보이스 청크 정보 조회
+    @GetMapping("/episodes/{episodeId}/tts/multi-voice/chunk-info")
+    public ResponseEntity<java.util.Map<String, Object>> getMultiVoiceChunkInfo(
+            @PathVariable Long episodeId,
+            @RequestParam Long voice1Id,
+            @RequestParam Long voice2Id,
+            @RequestParam Long narratorVoiceId
+    ) {
+        return ResponseEntity.ok(ttsService.getMultiVoiceChunkInfo(episodeId, voice1Id, voice2Id, narratorVoiceId));
+    }
+
+    // 멀티보이스 특정 청크 생성 (캐시 있으면 재사용)
+    @PostMapping("/episodes/{episodeId}/tts/multi-voice/chunk/{segmentIndex}")
+    public ResponseEntity<java.util.Map<String, Object>> generateMultiVoiceChunk(
+            @PathVariable Long episodeId,
+            @PathVariable Integer segmentIndex,
+            @RequestParam Long voice1Id,
+            @RequestParam Long voice2Id,
+            @RequestParam Long narratorVoiceId
+    ) {
+        String url = ttsService.generateMultiVoiceChunk(episodeId, segmentIndex, voice1Id, voice2Id, narratorVoiceId);
+        return ResponseEntity.ok(java.util.Map.of("url", url, "chunkIndex", segmentIndex));
+    }
+
     // 사용 가능한 목소리 목록 조회
     @GetMapping("/tts/voices")
     public ResponseEntity<List<TtsVoice>> getVoices() {
