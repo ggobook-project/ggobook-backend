@@ -35,19 +35,26 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
         String token = resolveToken(request);
 
-        if (token != null && jwtUtil.validateToken(token)) {
-            //  핵심: String 아이디 대신, 방금 만든 메서드로 PK(Long)를 추출합니다!
-            Long id = jwtUtil.getIdFromToken(token);
-            String role = jwtUtil.getRoleFromToken(token);
+        if (token != null) {
+            // 1. 토큰이 유효한 경우 (정상 통과)
+            if (jwtUtil.validateToken(token)) {
+                Long id = jwtUtil.getIdFromToken(token);
+                String role = jwtUtil.getRoleFromToken(token);
 
-            SimpleGrantedAuthority authority = new SimpleGrantedAuthority("ROLE_" + role);
+                SimpleGrantedAuthority authority = new SimpleGrantedAuthority("ROLE_" + role);
+                UsernamePasswordAuthenticationToken authentication =
+                        new UsernamePasswordAuthenticationToken(id, null, Collections.singletonList(authority));
 
-            //  핵심: 주체(Principal) 자리에 String userId 대신 Long id를 박아버립니다!
-            // 이제 모든 컨트롤러에서 @AuthenticationPrincipal Long userId 로 받을 수 있습니다.
-            UsernamePasswordAuthenticationToken authentication =
-                    new UsernamePasswordAuthenticationToken(id, null, Collections.singletonList(authority));
-
-            SecurityContextHolder.getContext().setAuthentication(authentication);
+                SecurityContextHolder.getContext().setAuthentication(authentication);
+            }
+            // ==========================================
+            // 🌟 핵심 수술 부위: 토큰이 썩었으면 401(Unauthorized) 에러를 프론트 요원에게 투척!
+            // ==========================================
+            else {
+                response.setStatus(HttpServletResponse.SC_UNAUTHORIZED); // 401 에러 코드 세팅
+                response.getWriter().write("Access Token Expired"); // 에러 메시지
+                return; // 더 이상 컨트롤러로 못 들어가게 여기서 필터 체인 종료 (입구컷)
+            }
         }
 
         filterChain.doFilter(request, response);
