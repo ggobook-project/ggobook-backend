@@ -33,4 +33,15 @@ public class Reply {
 
     @Column(nullable = false)
     private Boolean isDeleted = false; // 기본값은 false(안 지워짐)
+
+    @Column(nullable = false)
+    private Integer likeCount = 0;
+
+    @Column(nullable = false)
+    private Integer dislikeCount = 0;
+
+    public void increaseLikeCount() { this.likeCount++; }
+    public void decreaseLikeCount() { this.likeCount--; }
+    public void increaseDislikeCount() { this.dislikeCount++; }
+    public void decreaseDislikeCount() { this.dislikeCount--; }
 }

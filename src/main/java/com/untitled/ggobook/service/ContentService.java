@@ -4,8 +4,8 @@ import com.untitled.ggobook.domain.Content;
 import com.untitled.ggobook.domain.Episode;
 import com.untitled.ggobook.domain.enums.Status;
 import com.untitled.ggobook.dto.ContentDetailDto;
-import com.untitled.ggobook.repository.ContentRepository;
-import com.untitled.ggobook.repository.EpisodeRepository;
+import com.untitled.ggobook.dto.EpisodeDetailDto;
+import com.untitled.ggobook.repository.*;
 import com.untitled.ggobook.util.FileUtil;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
@@ -14,7 +14,6 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Slice;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
-import com.untitled.ggobook.repository.LikeRepository;
 
 
 // 작품 서비스
@@ -27,7 +26,10 @@ public class ContentService {
     private final EpisodeRepository episodeRepository;
     private final FileUtil fileUtil;
     private final LikeRepository likeRepository;
+    private final ReadingRepository readingRepository;
+    private final OwnedContentRepository ownedContentRepository;
 
+    @Transactional
     public Slice<Content> getContentList(String keyword, String genre, String type, Pageable pageable) {
         String searchKeyword = (keyword == null || keyword.isBlank()) ? null : keyword;
         String searchGenre = (genre == null || genre.isBlank()) ? null : genre;
@@ -51,6 +53,19 @@ public class ContentService {
             isLiked = likeRepository.findByUserIdAndContent_ContentId(userId, contentId) != null;
         }
 
+        Slice<EpisodeDetailDto> episodeDtos = episodes.map(ep -> {
+            EpisodeDetailDto dto = new EpisodeDetailDto();
+            dto.setEpisodeId(ep.getEpisodeId());
+            dto.setEpisodeNumber(ep.getEpisodeNumber());
+            dto.setEpisodeTitle(ep.getEpisodeTitle());
+            dto.setIsFree(ep.getIsFree());
+            dto.setStatus(ep.getStatus().name());
+            dto.setCreatedAt(ep.getCreatedAt());
+            dto.setIsRead(readingRepository.existsByUserIdAndEpisode_EpisodeId(userId, ep.getEpisodeId()));
+            dto.setIsOwned(false);
+            return dto;
+        });
+
         return new ContentDetailDto(
                 content.getContentId(),
                 content.getTitle(),
@@ -58,8 +73,8 @@ public class ContentService {
                 content.getGenre(),
                 content.getSummary(),
                 content.getThumbnailUrl(),
-                episodes,
-                isLiked
+                episodeDtos,
+                        isLiked
 
         );
     }
@@ -96,7 +111,7 @@ public class ContentService {
         contentRepository.deleteById(contentId);
     }
 
-
+    @Transactional
     public Content getContentByContentID(Long contentId) {
         return contentRepository.findById(contentId)
                 .orElseThrow(() -> new IllegalArgumentException("작품 없음"));

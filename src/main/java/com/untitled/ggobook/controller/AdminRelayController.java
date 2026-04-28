@@ -3,7 +3,10 @@ package com.untitled.ggobook.controller;
 import com.untitled.ggobook.domain.AdminRelayTopic;
 import com.untitled.ggobook.domain.RelayNovel;
 import com.untitled.ggobook.domain.RelayTopic;
+import com.untitled.ggobook.dto.RelayNovelDTO;
+import com.untitled.ggobook.dto.RelayNovelListDTO;
 import com.untitled.ggobook.service.AdminRelayService;
+import com.untitled.ggobook.service.RelayNovelService;
 import lombok.Data;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
@@ -18,6 +21,7 @@ import java.util.Map;
 public class AdminRelayController {
 
     private final AdminRelayService adminRelayService;
+    private final RelayNovelService relayNovelService;
 
     // ==========================================
     // 1. 릴레이 소설 가이드라인 관리 API
@@ -43,9 +47,8 @@ public class AdminRelayController {
      * [조회] 릴레이 소설 전체 목록 가져오기
      */
     @GetMapping("/relay-novels")
-    public ResponseEntity<List<RelayNovel>> getRelayNovelList() {
-        List<RelayNovel> novels = adminRelayService.getRelayNovelList();
-        return ResponseEntity.ok(novels);
+    public ResponseEntity<List<RelayNovelListDTO>> getRelayNovelList() { // 🌟 DTO 반환으로 변경
+        return ResponseEntity.ok(adminRelayService.getRelayNovelList());
     }
 
     /**
@@ -53,11 +56,10 @@ public class AdminRelayController {
      * API: GET /api/admin/relay-novels/{novelId}
      */
     @GetMapping("/relay-novels/{novelId}")
-    public ResponseEntity<RelayNovel> getRelayNovelDetail(@PathVariable Long novelId) {
-        // 서비스 단에 getRelayNovelDetail(novelId) 메서드가 있어야 합니다.
-        // 해당 메서드는 novelId로 소설을 찾아서 리턴해주는 역할을 합니다.
-        RelayNovel novel = adminRelayService.getRelayNovelDetail(novelId);
-        return ResponseEntity.ok(novel);
+    public ResponseEntity<RelayNovelDTO> getRelayNovelDetail(@PathVariable Long novelId) {
+        // 이제 relayNovelService에서 DTO를 리턴하므로 타입이 딱 맞습니다!
+        RelayNovelDTO novelDto = relayNovelService.getRelayNovelDetail(novelId);
+        return ResponseEntity.ok(novelDto);
     }
 
     /**

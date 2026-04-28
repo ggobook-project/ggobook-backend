@@ -12,8 +12,8 @@ import java.time.LocalDateTime;
         name = "owned_content",
         uniqueConstraints = {
                 @UniqueConstraint(
-                        name = "uk_user_content_owned",
-                        columnNames = {"user_id", "content_id"}
+                        name = "uk_user_episode_owned",
+                        columnNames = {"user_id", "episode_id"}
                 )
         }
 )

@@ -3,10 +3,7 @@ package com.untitled.ggobook.domain;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.untitled.ggobook.domain.enums.Status;
 import jakarta.persistence.*;
-import lombok.AccessLevel;
-import lombok.Getter;
-import lombok.NoArgsConstructor;
-import lombok.ToString;
+import lombok.*;
 
 import java.time.LocalDateTime;
 
@@ -57,4 +54,15 @@ public class RelayEntry {
         this.status = Status.BLINDED;
         this.adminMessage = safeSummary;
     }
+
+    @Builder
+    public RelayEntry(RelayNovel relayNovel, Long userId, String entryText, Integer entryOrder) {
+        this.relayNovel = relayNovel;
+        this.userId = userId;
+        this.entryText = entryText;
+        this.entryOrder = entryOrder;
+        this.status = Status.PUBLISHED;       // 기본값 설정
+        this.createdAt = LocalDateTime.now(); // 생성 시점 자동 저장
+    }
+
 }

@@ -39,4 +39,8 @@ public class Point {
     @JsonIgnore
     private Wallet wallet;
 
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "payment_id")
+    private Payment payment;
+
 }

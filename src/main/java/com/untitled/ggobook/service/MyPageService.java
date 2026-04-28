@@ -130,8 +130,10 @@ public class MyPageService {
     @Transactional(readOnly = true)
     public List<MyActivityDto> getMyAllCommentsAndReplies(Long id, Pageable pageable) { // 🌟 Long id 사용
 
-        // 🌟 팩트: 역시 userRepository 조회 삭제! id 들고 각 창고로 바로 직행합니다.
-        List<Comment> myComments = commentRepository.findMyComments(id, pageable).getContent();
+        // 🌟 핵심 수정: 방금 우리가 통일성 있게 만든 새 레파지토리 메서드 이름으로 호출합니다!
+        List<Comment> myComments = commentRepository.findByUser_IdAndIsDeletedFalseOrderByCreatedAtDesc(id, pageable).getContent();
+
+        // (참고: 만약 여기서도 에러가 난다면, ReplyRepository 도 순수 JPA 이름으로 바꿔주셔야 합니다!)
         List<Reply> myReplies = replyRepository.findMyReplies(id, pageable).getContent();
 
         List<MyActivityDto> combinedList = new ArrayList<>();

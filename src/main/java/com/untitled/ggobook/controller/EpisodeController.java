@@ -11,6 +11,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Slice;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -35,8 +36,15 @@ public class EpisodeController {
     }
 
     @GetMapping("/episodes/{episodeId}")
-    public Episode getEpisodeDetail(@PathVariable Long episodeId){
-        return episodeService.getEpisodeDetail(episodeId);
+    public Episode getEpisodeDetail(
+            @PathVariable Long episodeId,
+            @AuthenticationPrincipal Object principal
+    ){
+        Long id = null;
+        if (principal instanceof Long) {
+            id = (Long) principal;
+        }
+        return episodeService.getEpisodeDetail(episodeId, id);
     }
 
     @PostMapping("/contents/{contentId}/episodes")
@@ -70,4 +78,28 @@ public class EpisodeController {
     }
 
 
+    @PostMapping("/episodes/{episodeId}/purchase")
+    public ResponseEntity<String> purchaseEpisode(
+            @AuthenticationPrincipal Long id,
+            @PathVariable Long episodeId
+    ) {
+        episodeService.purchaseEpisode(id, episodeId);
+        return ResponseEntity.ok("구매 완료");
+    }
+    // 🌟 추가: 회차 좋아요 토글 API
+    @PostMapping("/episodes/{episodeId}/likes")
+    public ResponseEntity<String> toggleEpisodeLike(
+            @AuthenticationPrincipal Long id,
+            @PathVariable Long episodeId) {
+        episodeService.toggleEpisodeLike(id, episodeId);
+        return ResponseEntity.ok("회차 좋아요 처리 완료");
+    }
+    @GetMapping("/episodes/{episodeId}/is-liked")
+    public ResponseEntity<Boolean> checkEpisodeLike(
+            @AuthenticationPrincipal Long id,
+            @PathVariable Long episodeId) {
+        // 비회원이면 무조건 false 반환
+        if (id == null) return ResponseEntity.ok(false);
+        return ResponseEntity.ok(episodeService.checkEpisodeLike(id, episodeId));
+    }
 }
