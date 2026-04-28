@@ -2,6 +2,7 @@ package com.untitled.ggobook.domain;
 
 import com.untitled.ggobook.domain.enums.ReportReason;
 import com.untitled.ggobook.domain.enums.ReportStatus;
+import com.untitled.ggobook.domain.enums.TargetType;
 import jakarta.persistence.*;
 import lombok.AccessLevel;
 import lombok.Builder;
@@ -42,8 +43,9 @@ public class Report {
     @Column(nullable = false)
     private Long targetId;
 
+    @Enumerated(EnumType.STRING)
     @Column(nullable = false, length = 20)
-    private String targetType;
+    private TargetType targetType;
 
     // ==========================================
     // 🌟 수정 2: Enum 적용으로 타입 안정성 확보
@@ -74,7 +76,7 @@ public class Report {
     // ==========================================
 
     @Builder
-    public Report(User reporter, User reportedUser, Long targetId, String targetType, ReportReason reportReason) {
+    public Report(User reporter, User reportedUser, Long targetId, TargetType targetType, ReportReason reportReason) {
         this.reporter = reporter;
         this.reportedUser = reportedUser;
         this.targetId = targetId;

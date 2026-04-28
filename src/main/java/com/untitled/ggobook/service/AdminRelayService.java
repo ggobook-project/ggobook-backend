@@ -1,6 +1,7 @@
 package com.untitled.ggobook.service;
 
 import com.untitled.ggobook.domain.*;
+import com.untitled.ggobook.domain.enums.Status;
 import com.untitled.ggobook.dto.RelayNovelListDTO;
 import com.untitled.ggobook.repository.*;
 import com.untitled.ggobook.util.AIRequestUtil; // 🌟 신규: AI 통신 유틸 추가
@@ -55,11 +56,12 @@ public class AdminRelayService {
     }
 
     @Transactional
-    public void deleteRelayNovel(Long relayNovelId) {
-        if (!relayNovelRepository.existsById(relayNovelId)) {
-            throw new IllegalArgumentException("존재하지 않는 릴레이 소설입니다.");
-        }
-        relayNovelRepository.deleteById(relayNovelId);
+    public void updateNovelStatus(Long relayNovelId, Status status) {
+        RelayNovel novel = relayNovelRepository.findById(relayNovelId)
+                .orElseThrow(() -> new IllegalArgumentException("해당 소설을 찾을 수 없습니다."));
+
+        // 🌟 소설의 상태 변경 (아까 만든 Status Enum 활용)
+        novel.setStatus(status);
     }
 
     @Transactional(readOnly = true)

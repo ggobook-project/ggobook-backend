@@ -51,4 +51,12 @@ public interface ContentRepository extends JpaRepository<Content, Long> {
             String type1, String title, String type2, String nickname
     );
 
+    @Query("SELECT c FROM Content c " +
+            "WHERE c.type = :type " +
+            "AND (:day IS NULL OR c.serialDay = :day) " +
+            "ORDER BY c.contentId DESC")
+    List<Content> findByTypeAndSerialDay(@Param("type") String type, @Param("day") String day);
+
+    long countByStatus(Status status);
+
 }
