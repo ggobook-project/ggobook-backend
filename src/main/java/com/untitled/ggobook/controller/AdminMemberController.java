@@ -65,13 +65,5 @@ public class AdminMemberController {
         return ResponseEntity.ok("회원 정지가 성공적으로 해제되었습니다.");
     }
 
-//    @PostMapping("/{userId}/point")
-//    public ResponseEntity<String> adjustPoint(
-//            @PathVariable Long userId,
-//            @RequestBody Map<String, Integer> request) {
-//
-//        int amount = request.get("amount");
-//        adminMemberService.adjustPoint(userId, amount);
-//        return ResponseEntity.ok("포인트가 성공적으로 반영되었습니다.");
-//    }
+
 }
