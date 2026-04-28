@@ -1,5 +1,6 @@
 package com.untitled.ggobook.domain;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
 import lombok.Data;
 import lombok.ToString;
@@ -16,6 +17,7 @@ public class ContentTag {
     @ToString.Exclude
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "content_id")
+    @JsonIgnore
     private Content content;
 
     private String tagName;

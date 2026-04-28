@@ -32,6 +32,7 @@ public class Episode {
 
     private String thumbnailUrl;
     private Boolean isFree = true;
+    private Integer price = 0;
 
     @Enumerated(EnumType.STRING)
     private Status status = Status.DRAFT;

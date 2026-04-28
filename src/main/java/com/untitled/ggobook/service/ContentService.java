@@ -1,6 +1,7 @@
 package com.untitled.ggobook.service;
 
 import com.untitled.ggobook.domain.Content;
+import com.untitled.ggobook.domain.ContentTag;
 import com.untitled.ggobook.domain.Episode;
 import com.untitled.ggobook.domain.enums.Status;
 import com.untitled.ggobook.dto.ContentDetailDto;
@@ -15,6 +16,8 @@ import org.springframework.data.domain.Slice;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
+import java.util.List;
+
 
 // 작품 서비스
 @Service
@@ -28,6 +31,7 @@ public class ContentService {
     private final LikeRepository likeRepository;
     private final ReadingRepository readingRepository;
     private final OwnedContentRepository ownedContentRepository;
+    private final ContentTagRepository contentTagRepository;
 
     @Transactional
     public Slice<Content> getContentList(String keyword, String genre, String type, Pageable pageable) {
@@ -61,10 +65,13 @@ public class ContentService {
             dto.setIsFree(ep.getIsFree());
             dto.setStatus(ep.getStatus().name());
             dto.setCreatedAt(ep.getCreatedAt());
+            dto.setThumbnailUrl(ep.getThumbnailUrl());
             dto.setIsRead(readingRepository.existsByUserIdAndEpisode_EpisodeId(userId, ep.getEpisodeId()));
             dto.setIsOwned(false);
             return dto;
         });
+
+        List<ContentTag> tags = contentTagRepository.findByContent_ContentId(contentId);
 
         return new ContentDetailDto(
                 content.getContentId(),
@@ -74,17 +81,19 @@ public class ContentService {
                 content.getSummary(),
                 content.getThumbnailUrl(),
                 episodeDtos,
-                        isLiked
+                isLiked,
+                tags
+
 
         );
     }
 
     @Transactional
-    public void registerContent(Content content, MultipartFile multipartFile) {
+    public Content registerContent(Content content, MultipartFile multipartFile) {
         if(!multipartFile.isEmpty()){
             content.setThumbnailUrl(fileUtil.uploadToS3(multipartFile));
         }
-        contentRepository.save(content);
+        return contentRepository.save(content);
     }
 
     @Transactional

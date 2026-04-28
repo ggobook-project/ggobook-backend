@@ -49,4 +49,6 @@ public interface EpisodeRepository extends JpaRepository<Episode, Long> {
     List<Episode> findPendingPublishing();
 
     List<Episode> findByContent_ContentIdOrderByEpisodeNumberDesc(Long contentId);
+
+    Optional<Episode> findTopByContent_ContentIdOrderByEpisodeNumberDesc(Long contentId);
 }

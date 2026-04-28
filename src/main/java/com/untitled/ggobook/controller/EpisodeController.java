@@ -102,4 +102,9 @@ public class EpisodeController {
         if (id == null) return ResponseEntity.ok(false);
         return ResponseEntity.ok(episodeService.checkEpisodeLike(id, episodeId));
     }
+
+    @GetMapping("/contents/{contentId}/episodes/next-number")
+    public ResponseEntity<Integer> getNextEpisodeNumber(@PathVariable Long contentId) {
+        return ResponseEntity.ok(episodeService.getNextEpisodeNumber(contentId));
+    }
 }

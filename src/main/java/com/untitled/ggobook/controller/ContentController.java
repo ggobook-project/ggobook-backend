@@ -11,6 +11,8 @@ import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
+import java.util.Map;
+
 @RestController
 @RequestMapping("/api/contents")
 @RequiredArgsConstructor
@@ -48,11 +50,11 @@ public class ContentController {
     }
 
     @PostMapping("/")
-    public ResponseEntity<String> registerContent(
+    public ResponseEntity<Map<String, Object>> registerContent(
             @RequestPart("content") Content content,
             @RequestPart("file") MultipartFile multipartFile) {
-        contentService.registerContent(content, multipartFile);
-        return ResponseEntity.ok("작품 업로드 성공");
+        Content saved = contentService.registerContent(content, multipartFile);
+        return ResponseEntity.ok(Map.of("contentId", saved.getContentId()));
     }
 
     @PutMapping("/{contentId}")

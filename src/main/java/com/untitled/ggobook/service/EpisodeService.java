@@ -206,4 +206,12 @@ public class EpisodeService {
         // 내 이름이 방명록(EpisodeLike)에 있는지 확인해서 true/false 반환
         return episodeLikeRepository.findByUserIdAndEpisode(userId, episode).isPresent();
     }
+
+    @Transactional(readOnly = true)
+    public Integer getNextEpisodeNumber(Long contentId) {
+        return episodeRepository
+                .findTopByContent_ContentIdOrderByEpisodeNumberDesc(contentId)
+                .map(ep -> ep.getEpisodeNumber() + 1)
+                .orElse(1);
+    }
 }

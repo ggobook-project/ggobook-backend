@@ -27,5 +27,7 @@ public class EpisodeDetailDto {
 
     // 소장 여부
     private Boolean isOwned;
+
+    private String thumbnailUrl;
 }
 
