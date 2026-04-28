@@ -43,6 +43,9 @@ public class Report {
     @Column(nullable = false)
     private Long targetId;
 
+    @Column(name = "target_parent_id")
+    private Long targetParentId;
+
     @Enumerated(EnumType.STRING)
     @Column(nullable = false, length = 20)
     private TargetType targetType;
@@ -76,10 +79,11 @@ public class Report {
     // ==========================================
 
     @Builder
-    public Report(User reporter, User reportedUser, Long targetId, TargetType targetType, ReportReason reportReason) {
+    public Report(User reporter, User reportedUser, Long targetId, Long targetParentId, TargetType targetType, ReportReason reportReason) {
         this.reporter = reporter;
         this.reportedUser = reportedUser;
         this.targetId = targetId;
+        this.targetParentId = targetParentId;
         this.targetType = targetType;
         this.reportReason = reportReason;
     }

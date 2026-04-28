@@ -13,6 +13,7 @@ public class RelayNovelListDTO {
     private String title;
     private String description;
     private String starterNickname;
+    private Long starterId; // 🌟 1. 작성자 ID를 담을 필드 추가
     private Status status;
     private long uniqueParticipantCount;
     private int entryCount;
@@ -24,9 +25,14 @@ public class RelayNovelListDTO {
         this.description = (novel.getDescription() != null && !novel.getDescription().isEmpty())
                 ? novel.getDescription()
                 : "아직 소개글이 없습니다. 첫 번째 이야기를 시작해 보세요!";
+
         this.starterNickname = nickname;
+
+        // 🌟 [핵심 수정] 엔티티의 userId를 DTO의 starterId에 매핑합니다.
+        this.starterId = novel.getUserId();
+
         this.createdAt = novel.getCreatedAt();
-        this.status = novel.getStatus(); // 🌟 추가: 엔티티에서 상태값 가져오기
+        this.status = novel.getStatus();
 
         if (novel.getEntries() != null) {
             this.uniqueParticipantCount = novel.getEntries().stream()
