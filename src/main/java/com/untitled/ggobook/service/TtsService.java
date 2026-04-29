@@ -3,14 +3,18 @@ package com.untitled.ggobook.service;
 import com.untitled.ggobook.domain.Episode;
 import com.untitled.ggobook.domain.MultiVoiceChunk;
 import com.untitled.ggobook.domain.Novel;
+import com.untitled.ggobook.domain.RelayEntry;
 import com.untitled.ggobook.domain.TtsChunk;
 import com.untitled.ggobook.domain.TtsVoice;
+import com.untitled.ggobook.domain.enums.Status;
 import com.untitled.ggobook.dto.TtsResponseDto;
 import com.untitled.ggobook.repository.EpisodeRepository;
 import com.untitled.ggobook.repository.MultiVoiceChunkRepository;
 import com.untitled.ggobook.repository.NovelRepository;
+import com.untitled.ggobook.repository.RelayEntryRepository;
 import com.untitled.ggobook.repository.TtsChunkRepository;
 import com.untitled.ggobook.repository.TtsVoiceRepository;
+import java.util.stream.Collectors;
 import com.untitled.ggobook.util.FileUtil;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
@@ -36,6 +40,7 @@ public class TtsService {
 
     private final EpisodeRepository episodeRepository;
     private final NovelRepository novelRepository;
+    private final RelayEntryRepository relayEntryRepository;
     private final TtsVoiceRepository ttsVoiceRepository;
     private final TtsChunkRepository ttsChunkRepository;
     private final MultiVoiceChunkRepository multiVoiceChunkRepository;
@@ -371,5 +376,120 @@ public class TtsService {
         return chunks;
     }
 
+    // 목소리 미리듣기 ("안녕하세요 꼬북입니다" 고정 텍스트)
+    public String generatePreview(Long voiceId) {
+        TtsVoice ttsVoice = ttsVoiceRepository.findById(voiceId)
+                .orElseThrow(() -> new IllegalArgumentException("목소리를 찾을 수 없습니다."));
+        byte[] audioData = synthesizeByProvider(ttsVoice, "안녕하세요 꼬북입니다.");
+        return fileUtil.uploadAudioToS3(audioData);
+    }
 
+    // ==================== 릴레이소설 TTS ====================
+
+    // 공개된 회차 텍스트를 순서대로 합쳐 반환
+    private String combineRelayEntries(Long relayNovelId) {
+        List<RelayEntry> entries = relayEntryRepository
+                .findByRelayNovel_RelayNovelIdOrderByEntryOrderAsc(relayNovelId);
+        if (entries.isEmpty()) throw new IllegalArgumentException("릴레이소설 회차가 없습니다.");
+        return entries.stream()
+                .filter(e -> e.getStatus() == Status.PUBLISHED)
+                .map(RelayEntry::getEntryText)
+                .collect(Collectors.joining("\n\n"));
+    }
+
+    // 릴레이소설 단일 보이스 청크 정보 조회
+    @Transactional(readOnly = true)
+    public Map<String, Object> getRelayNovelChunkInfo(Long relayNovelId, Long voiceId) {
+        String text = combineRelayEntries(relayNovelId);
+        List<String> chunks = splitTextForChunking(text);
+
+        Long virtualId = -relayNovelId;
+        List<TtsChunk> existing = ttsChunkRepository.findByEpisodeIdAndVoiceIdOrderByChunkIndex(virtualId, voiceId);
+        Map<String, String> chunkUrls = new HashMap<>();
+        for (TtsChunk c : existing)
+            chunkUrls.put(String.valueOf(c.getChunkIndex()), c.getChunkUrl());
+
+        Map<String, Object> result = new HashMap<>();
+        result.put("totalChunks", chunks.size());
+        result.put("chunkUrls", chunkUrls);
+        return result;
+    }
+
+    // 릴레이소설 단일 보이스 특정 청크 생성
+    public String generateRelayNovelTtsChunk(Long relayNovelId, Long voiceId, Integer chunkIndex) {
+        Long virtualId = -relayNovelId;
+        return ttsChunkRepository.findByEpisodeIdAndVoiceIdAndChunkIndex(virtualId, voiceId, chunkIndex)
+                .map(TtsChunk::getChunkUrl)
+                .orElseGet(() -> {
+                    TtsVoice ttsVoice = ttsVoiceRepository.findById(voiceId)
+                            .orElseThrow(() -> new IllegalArgumentException("목소리를 찾을 수 없습니다."));
+                    String text = combineRelayEntries(relayNovelId);
+                    List<String> chunks = splitTextForChunking(text);
+                    if (chunkIndex >= chunks.size()) throw new IllegalArgumentException("청크 인덱스 초과");
+
+                    byte[] audioData = synthesizeByProvider(ttsVoice, chunks.get(chunkIndex));
+                    String url = fileUtil.uploadAudioToS3(audioData);
+
+                    TtsChunk chunk = new TtsChunk();
+                    chunk.setEpisodeId(virtualId);
+                    chunk.setVoiceId(voiceId);
+                    chunk.setChunkIndex(chunkIndex);
+                    chunk.setChunkUrl(url);
+                    ttsChunkRepository.save(chunk);
+                    return url;
+                });
+    }
+
+    // 릴레이소설 멀티 보이스 청크 정보 조회
+    @Transactional(readOnly = true)
+    public Map<String, Object> getRelayNovelMultiVoiceChunkInfo(Long relayNovelId, Long voice1Id, Long voice2Id, Long narratorVoiceId) {
+        String text = combineRelayEntries(relayNovelId);
+        List<Segment> segments = parseMultiVoiceSegments(text);
+
+        Long virtualId = -relayNovelId;
+        List<MultiVoiceChunk> existing = multiVoiceChunkRepository
+                .findByEpisodeIdAndVoice1IdAndVoice2IdAndNarratorVoiceIdOrderBySegmentIndex(
+                        virtualId, voice1Id, voice2Id, narratorVoiceId);
+        Map<String, String> chunkUrls = new HashMap<>();
+        for (MultiVoiceChunk c : existing)
+            chunkUrls.put(String.valueOf(c.getSegmentIndex()), c.getChunkUrl());
+
+        Map<String, Object> result = new HashMap<>();
+        result.put("totalChunks", segments.size());
+        result.put("chunkUrls", chunkUrls);
+        return result;
+    }
+
+    // 릴레이소설 멀티 보이스 특정 청크 생성
+    public String generateRelayNovelMultiVoiceChunk(Long relayNovelId, Integer segmentIndex, Long voice1Id, Long voice2Id, Long narratorVoiceId) {
+        Long virtualId = -relayNovelId;
+        return multiVoiceChunkRepository.findByEpisodeIdAndVoice1IdAndVoice2IdAndNarratorVoiceIdAndSegmentIndex(
+                        virtualId, voice1Id, voice2Id, narratorVoiceId, segmentIndex)
+                .map(MultiVoiceChunk::getChunkUrl)
+                .orElseGet(() -> {
+                    String text = combineRelayEntries(relayNovelId);
+                    List<Segment> segments = parseMultiVoiceSegments(text);
+                    if (segmentIndex >= segments.size()) throw new IllegalArgumentException("세그먼트 인덱스 초과");
+
+                    Segment seg = segments.get(segmentIndex);
+                    Long voiceId = seg.speakerIndex == -1 ? narratorVoiceId
+                            : seg.speakerIndex == 0 ? voice1Id : voice2Id;
+
+                    TtsVoice ttsVoice = ttsVoiceRepository.findById(voiceId)
+                            .orElseThrow(() -> new IllegalArgumentException("목소리를 찾을 수 없습니다."));
+
+                    byte[] audioData = synthesizeByProvider(ttsVoice, seg.text);
+                    String url = fileUtil.uploadAudioToS3(audioData);
+
+                    MultiVoiceChunk chunk = new MultiVoiceChunk();
+                    chunk.setEpisodeId(virtualId);
+                    chunk.setVoice1Id(voice1Id);
+                    chunk.setVoice2Id(voice2Id);
+                    chunk.setNarratorVoiceId(narratorVoiceId);
+                    chunk.setSegmentIndex(segmentIndex);
+                    chunk.setChunkUrl(url);
+                    multiVoiceChunkRepository.save(chunk);
+                    return url;
+                });
+    }
 }

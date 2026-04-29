@@ -20,9 +20,9 @@ public class TtsVoice {
     @Column(nullable = false, length = 100)
     private String voiceName;
 
-    // GOOGLE / NAVER
+    // GOOGLE / NAVER / TYPECAST
     @Column(length = 20)
-    private String provider = "GOOGLE";
+    private String provider = "TYPECAST";
 
     // MALE / FEMALE
     @Column(nullable = false, length = 20)
@@ -32,10 +32,10 @@ public class TtsVoice {
     @Column(nullable = false, length = 50)
     private String voiceStyle;
 
-    @Column(nullable = false, length = 500)
+    @Column(length = 500)
     private String sampleUrl;
 
-    @Column(nullable = false, length = 500)
+    @Column(length = 500)
     private String fileUrl;
 
     // 기본 제공 목소리 여부
