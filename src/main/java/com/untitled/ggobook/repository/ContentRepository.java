@@ -23,10 +23,11 @@ public interface ContentRepository extends JpaRepository<Content, Long> {
     // (JPA가 내부적으로 "SELECT * FROM content WHERE status = 'PENDING'" 쿼리를 실행합니다.)
     List<Content> findByStatus(Status status);
 
-    @Query("SELECT c FROM Content c " +
-            "WHERE (:keyword IS NULL OR c.title LIKE %:keyword%) " +
-            "AND (:genre IS NULL OR c.genre = :genre)" +
-            "AND (:type IS NULL OR c.type = :type)" +
+    @Query("SELECT DISTINCT c FROM Content c " +
+            "LEFT JOIN c.tags t " +
+            "WHERE (:keyword IS NULL OR c.title LIKE %:keyword% OR t.tagName LIKE %:keyword%) " +
+            "AND (:genre IS NULL OR c.genre = :genre) " +
+            "AND (:type IS NULL OR c.type = :type) " +
             "ORDER BY c.createdAt DESC")
     Slice<Content> findContentList(@Param("keyword") String keyword,
                                    @Param("genre") String genre,
