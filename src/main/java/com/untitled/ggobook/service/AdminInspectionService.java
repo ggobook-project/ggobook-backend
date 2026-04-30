@@ -7,6 +7,8 @@ import com.untitled.ggobook.domain.enums.Status;
 import com.untitled.ggobook.repository.EpisodeRepository;
 import com.untitled.ggobook.util.AIRequestUtil;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page; // 🌟 추가
+import org.springframework.data.domain.Pageable; // 🌟 추가
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -21,9 +23,11 @@ public class AdminInspectionService {
     private final AIRequestUtil aiRequestUtil;
     private final NotificationService notificationService;
 
+    // 🌟 수정: 페이징을 지원하는 검수 목록 조회
     @Transactional(readOnly = true)
-    public List<Episode> getInspectionList() {
-        return episodeRepository.findByStatus(Status.PENDING);
+    public Page<Episode> getInspectionList(Pageable pageable) {
+        // PENDING 상태인 회차들만 페이징 처리하여 가져옵니다. (오래된 순 정렬은 컨트롤러에서 설정)
+        return episodeRepository.findByStatusWithContent(Status.PENDING, pageable);
     }
 
     @Transactional(readOnly = true)
@@ -34,19 +38,16 @@ public class AdminInspectionService {
 
     @Transactional
     public void approveEpisode(Long episodeId, LocalDateTime scheduledAt) {
-
         Episode episode = getEpisodeDetail(episodeId);
         Content content = episode.getContent();
-
         String textForAI = episode.getExtractableTextForAI();
-
         String aiSummary = null;
 
         if (textForAI != null && !textForAI.trim().isEmpty()) {
             try {
                 aiSummary = aiRequestUtil.sendRequest(textForAI);
             } catch (Exception e) {
-                e.printStackTrace(); // 어떤 에러인지 상세히 출력
+                e.printStackTrace();
             }
         } else {
             System.out.println("DEBUG: [알림] 추출할 텍스트가 없어 요약을 건너뜁니다.");
@@ -54,6 +55,7 @@ public class AdminInspectionService {
 
         episode.approve(scheduledAt, aiSummary);
 
+        // 🌟 기획 충족 포인트: 1화 승인 시, 대기 중이던 Content도 같이 승인
         if (episode.getEpisodeNumber() == 1 && content.getStatus() == Status.PENDING) {
             content.approve();
         }
@@ -80,11 +82,11 @@ public class AdminInspectionService {
 
         episode.reject(rejectReason);
 
+        // 🌟 기획 충족 포인트: 1화 반려 시, 해당 신규 작품(Content)도 함께 연쇄 반려
         if (episode.getEpisodeNumber() == 1 && content.getStatus() == Status.PENDING) {
             content.reject("1화 반려로 인한 기각: " + rejectReason);
         }
 
-        // 🌟 반려 알림 발송 (경로 통일 및 사유 포함)
         String rejectMessage = String.format("[%s] %d화가 반려되었습니다. [사유: %s]",
                 content.getTitle(),
                 episode.getEpisodeNumber(),
@@ -108,7 +110,6 @@ public class AdminInspectionService {
         Episode episode = getEpisodeDetail(episodeId);
         episode.blind(reason);
 
-        // 🌟 블라인드 알림 발송 (경로 통일)
         String blindMessage = String.format("[%s] %d화가 관리자에 의해 블라인드 처리되었습니다. [사유: %s]",
                 episode.getContent().getTitle(),
                 episode.getEpisodeNumber(),
