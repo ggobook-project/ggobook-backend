@@ -22,8 +22,8 @@ public class RankingScheduler {
 
     // 매일 새벽 2시 0분 0초에 실행 (크론 표현식)
     // 테스트하실 때는 "0 * * * * *" 로 바꾸면 매 1분마다 실행됩니다!
-    // @Scheduled(cron = "*/10 * * * * *")
-    @Scheduled(cron = "0 0 2 * * *")
+    @Scheduled(cron = "*/10 * * * * *")
+//    @Scheduled(cron = "0 0 2 * * *")
     @Transactional
     public void updateWeeklyRankingScores() {
         log.info("🔥 주간 랭킹 점수 업데이트 배치 작업 시작...");
