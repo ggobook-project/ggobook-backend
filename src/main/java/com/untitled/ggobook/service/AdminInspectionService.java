@@ -18,7 +18,7 @@ import java.util.List;
 
 @Service
 @RequiredArgsConstructor
-public clasAdminInspectionService {
+public class AdminInspectionService {
 
     private final EpisodeRepository episodeRepository;
     private final AIRequestUtil aiRequestUtil;
