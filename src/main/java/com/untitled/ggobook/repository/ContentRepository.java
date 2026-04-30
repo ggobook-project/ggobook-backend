@@ -59,4 +59,15 @@ public interface ContentRepository extends JpaRepository<Content, Long> {
 
     long countByStatus(Status status);
 
+    // 🌟 추가: 인기순(랭킹순)으로 가져오는 전용 쿼리! (weeklyScore 높은 순)
+    @Query("SELECT c FROM Content c " +
+            "WHERE (:keyword IS NULL OR c.title LIKE %:keyword%) " +
+            "AND (:genre IS NULL OR c.genre = :genre)" +
+            "AND (:type IS NULL OR c.type = :type)" +
+            "ORDER BY c.weeklyScore DESC, c.createdAt DESC")
+    Slice<Content> findPopularContentList(@Param("keyword") String keyword,
+                                          @Param("genre") String genre,
+                                          @Param("type") String type,
+                                          Pageable pageable);
+
 }

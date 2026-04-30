@@ -102,4 +102,29 @@ public class User {
         this.email = email;
         return this;
     }
+
+    // ==========================================
+    // 🌟 추가: 유저 탈퇴 처리 (Soft Delete)
+    // ==========================================
+    /**
+     * [회원 탈퇴] Soft Delete 및 개인정보 익명화
+     * 즉시 재가입이 가능하도록 유니크 컬럼(userId, email, nickname)을 더미값으로 변경합니다.
+     * PK(id)는 유지되어 기존에 작성한 게시물/댓글과의 연결이 깨지지 않습니다.
+     */
+    public void withdraw() {
+        this.status = UserStatus.WITHDRAWN;
+
+        // 고유 번호(id)를 활용한 절대 겹치지 않는 더미 접두사 생성
+        String dummyPrefix = "withdrawn_" + this.id + "_";
+
+        // 1. 유니크(Unique) 제약 조건 해제 (기존 정보 해방)
+        this.userId = dummyPrefix + this.userId;
+        this.email = dummyPrefix + this.email;
+        this.nickname = "탈퇴한회원_" + this.id; // 닉네임도 유니크 컬럼이므로 더미화 필요
+
+        // 2. 기타 개인정보 익명화 및 파기
+        this.name = "알수없음";
+        this.password = "WITHDRAWN_ACCOUNT_PROTECTED";
+        this.suspensionEndDate = null;
+    }
 }

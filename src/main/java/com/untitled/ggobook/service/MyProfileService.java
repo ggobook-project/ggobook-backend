@@ -63,4 +63,18 @@ public class MyProfileService {
             user.setPassword(passwordEncoder.encode(request.getNewPassword()));
         }
     }
+
+    // ==========================================
+    // 🌟 추가: 회원 탈퇴 (Soft Delete)
+    // ==========================================
+    @Transactional
+    public void withdrawUser(Long id) {
+        User user = userRepository.findById(id)
+                .orElseThrow(() -> new IllegalArgumentException("회원 정보를 찾을 수 없습니다."));
+
+        // User.java에 만들어둔 즉시 재가입(익명화) 탈퇴 메서드 호출
+        user.withdraw();
+
+        // @Transactional 덕분에 더티 체킹이 일어나서 자동으로 DB에 UPDATE 쿼리가 날아갑니다.
+    }
 }

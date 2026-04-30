@@ -28,18 +28,15 @@ public class CommentService {
     public Slice<CommentResponseDto> getEpisodeComments(Long userId, Long episodeId, Pageable pageable) {
         return commentRepository.findByEpisode_EpisodeIdOrderByCreatedAtDesc(episodeId, pageable)
                 .map(comment -> {
-                    // 1. 기존 로직으로 DTO 생성
+                    // 🌟 1. 그냥 DTO 한 줄 호출하면 끝! (N+1 문제 해결)
                     CommentResponseDto dto = CommentResponseDto.from(comment);
 
-                    // 2. 로그인 유저라면 방명록을 확인해서 상태(myReaction)를 덧입힘
+                    // 2. 로그인 유저 상태 덧입히기 (기존 동일)
                     if (userId != null) {
-                        // 부모 댓글 확인
                         commentReactionRepository.findByUserIdAndComment(userId, comment)
                                 .ifPresent(r -> dto.setMyReaction(r.getReactionType().name()));
 
-                        // 자식 답글들 확인
                         dto.getReplies().forEach(replyDto -> {
-                            // reply 엔티티를 찾기 위해 ID로 조회하는 레파지토리 메서드 필요
                             replyReactionRepository.findByUserIdAndReply_ReplyId(userId, replyDto.getReplyId())
                                     .ifPresent(reaction -> replyDto.setMyReaction(reaction.getReactionType().name()));
                         });

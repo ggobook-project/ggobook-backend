@@ -20,15 +20,19 @@ public class ReplyResponseDto {
     private Integer dislikeCount; // 🌟 추가
     private String myReaction;    // 🌟 추가
 
+    //🌟 추가  닉네임
+    private String nickname;
+
     public static ReplyResponseDto from(Reply reply) {
         return ReplyResponseDto.builder()
                 .replyId(reply.getReplyId())
-                .userId(reply.getUserId())
+                .userId(reply.getUser().getId()) // user 객체에서 꺼냄
+                .nickname(reply.getUser().getNickname() != null ? reply.getUser().getNickname() : "알 수 없음") // 닉네임 꺼냄!
                 .replyText(reply.getIsDeleted() ? "삭제된 답글입니다." : reply.getReplyText())
                 .createdAt(reply.getCreatedAt())
                 .isDeleted(reply.getIsDeleted())
                 .likeCount(reply.getLikeCount() != null ? reply.getLikeCount() : 0)
-                .dislikeCount(reply.getDislikeCount() != null ? reply.getDislikeCount() : 0) // null 방지
+                .dislikeCount(reply.getDislikeCount() != null ? reply.getDislikeCount() : 0)
                 .build();
     }
 }
