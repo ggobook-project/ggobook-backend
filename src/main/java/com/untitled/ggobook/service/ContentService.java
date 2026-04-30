@@ -6,6 +6,7 @@ import com.untitled.ggobook.domain.Episode;
 import com.untitled.ggobook.domain.enums.Status;
 import com.untitled.ggobook.dto.ContentDetailDto;
 import com.untitled.ggobook.dto.EpisodeDetailDto;
+import com.untitled.ggobook.domain.User;
 import com.untitled.ggobook.repository.*;
 import com.untitled.ggobook.util.FileUtil;
 import jakarta.transaction.Transactional;
@@ -27,6 +28,7 @@ public class ContentService {
 
     private final ContentRepository contentRepository;
     private final EpisodeRepository episodeRepository;
+    private final UserRepository userRepository;
     private final FileUtil fileUtil;
     private final LikeRepository likeRepository;
     private final ReadingRepository readingRepository;
@@ -89,8 +91,11 @@ public class ContentService {
     }
 
     @Transactional
-    public Content registerContent(Content content, MultipartFile multipartFile) {
-        if(!multipartFile.isEmpty()){
+    public Content registerContent(Content content, MultipartFile multipartFile, Long authorId) {
+        User author = userRepository.findById(authorId)
+                .orElseThrow(() -> new IllegalArgumentException("사용자 없음"));
+        content.setAuthor(author);
+        if (!multipartFile.isEmpty()) {
             content.setThumbnailUrl(fileUtil.uploadToS3(multipartFile));
         }
         return contentRepository.save(content);
@@ -124,5 +129,10 @@ public class ContentService {
     public Content getContentByContentID(Long contentId) {
         return contentRepository.findById(contentId)
                 .orElseThrow(() -> new IllegalArgumentException("작품 없음"));
+    }
+
+    @Transactional
+    public Slice<Content> getMyContents(Long authorId, Pageable pageable) {
+        return contentRepository.findByAuthorIdOrderByCreatedAtDesc(authorId, pageable);
     }
 }

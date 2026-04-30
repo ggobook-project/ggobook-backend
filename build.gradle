@@ -63,6 +63,10 @@ dependencies {
 	// Google Cloud Text-to-Speech
 	implementation 'com.google.cloud:google-cloud-texttospeech:2.48.0'
 	implementation 'com.github.iamport:iamport-rest-client-java:0.2.23'
+
+	// aws 고성능 기능 사용을 위한 의존성 추가
+	implementation 'javax.xml.bind:jaxb-api:2.3.1'
+	implementation 'org.glassfish.jaxb:jaxb-runtime:2.3.1'
 }
 
 tasks.named('test') {

@@ -60,4 +60,6 @@ public interface ContentRepository extends JpaRepository<Content, Long> {
 
     long countByStatus(Status status);
 
+    Slice<Content> findByAuthorIdOrderByCreatedAtDesc(Long authorId, Pageable pageable);
+
 }

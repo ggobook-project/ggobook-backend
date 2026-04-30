@@ -29,6 +29,14 @@ public class ContentController {
         return contentService.getContentList(keyword, genre, type, pageable);
     }
 
+    @GetMapping("/my")
+    public ResponseEntity<Slice<Content>> getMyContents(
+            @AuthenticationPrincipal Long id,
+            Pageable pageable
+    ) {
+        return ResponseEntity.ok(contentService.getMyContents(id, pageable));
+    }
+
     // 🌟 대기업 정석: 시큐리티 인증(AuthenticationPrincipal)을 유지하되, 비회원 에러 완벽 차단
     @GetMapping("/{contentId}")
     public ResponseEntity<ContentDetailDto> getContentDetail(
@@ -52,8 +60,9 @@ public class ContentController {
     @PostMapping("/")
     public ResponseEntity<Map<String, Object>> registerContent(
             @RequestPart("content") Content content,
-            @RequestPart("file") MultipartFile multipartFile) {
-        Content saved = contentService.registerContent(content, multipartFile);
+            @RequestPart("file") MultipartFile multipartFile,
+            @AuthenticationPrincipal Long id) {
+        Content saved = contentService.registerContent(content, multipartFile, id);
         return ResponseEntity.ok(Map.of("contentId", saved.getContentId()));
     }
 
