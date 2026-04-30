@@ -21,7 +21,11 @@ public class WalletController {
     public ResponseEntity<Integer> getWalletBalance(
             @AuthenticationPrincipal Long id
     ) {
-        Wallet wallet = walletService.getWalletBalance(id);
-        return ResponseEntity.ok(wallet.getBalance());
+        try {
+            Wallet wallet = walletService.getWalletBalance(id);
+            return ResponseEntity.ok(wallet.getBalance());
+        } catch (RuntimeException e) {
+            return ResponseEntity.ok(0);
+        }
     }
 }
