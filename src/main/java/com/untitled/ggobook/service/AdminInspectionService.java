@@ -4,6 +4,7 @@ import com.untitled.ggobook.domain.Content;
 import com.untitled.ggobook.domain.Episode;
 import com.untitled.ggobook.domain.Notification;
 import com.untitled.ggobook.domain.enums.Status;
+import com.untitled.ggobook.repository.ContentRepository;
 import com.untitled.ggobook.repository.EpisodeRepository;
 import com.untitled.ggobook.util.AIRequestUtil;
 import lombok.RequiredArgsConstructor;
@@ -18,12 +19,46 @@ import java.util.List;
 public class AdminInspectionService {
 
     private final EpisodeRepository episodeRepository;
+    private final ContentRepository contentRepository;
     private final AIRequestUtil aiRequestUtil;
     private final NotificationService notificationService;
 
     @Transactional(readOnly = true)
-    public List<Episode> getInspectionList() {
-        return episodeRepository.findByStatus(Status.PENDING);
+    public List<Content> getInspectionList() {
+        return contentRepository.findByStatusInWithAuthor(List.of(Status.PENDING, Status.DRAFT));
+    }
+
+    @Transactional(readOnly = true)
+    public Content getContentDetail(Long contentId) {
+        return contentRepository.findByIdWithAuthor(contentId)
+                .orElseThrow(() -> new IllegalArgumentException("해당 작품을 찾을 수 없습니다."));
+    }
+
+    @Transactional
+    public void approveContent(Long contentId) {
+        Content content = getContentDetail(contentId);
+        content.approve();
+        notificationService.send(
+                content.getAuthor().getId(),
+                String.format("[%s] 작품이 승인되었습니다. 회차를 등록하고 연재를 시작하세요!", content.getTitle()),
+                Notification.NotificationType.APPROVE,
+                "/author/contents"
+        );
+    }
+
+    @Transactional
+    public void rejectContent(Long contentId, String rejectReason) {
+        if (rejectReason == null || rejectReason.trim().isEmpty()) {
+            throw new IllegalArgumentException("반려 사유는 필수 입력 사항입니다.");
+        }
+        Content content = getContentDetail(contentId);
+        content.reject(rejectReason);
+        notificationService.send(
+                content.getAuthor().getId(),
+                String.format("[%s] 작품이 반려되었습니다. [사유: %s]", content.getTitle(), rejectReason),
+                Notification.NotificationType.REJECT,
+                "/author/contents"
+        );
     }
 
     @Transactional(readOnly = true)

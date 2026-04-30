@@ -98,6 +98,7 @@ public class ContentService {
         if (!multipartFile.isEmpty()) {
             content.setThumbnailUrl(fileUtil.uploadToS3(multipartFile));
         }
+        content.setStatus(Status.PENDING);
         return contentRepository.save(content);
     }
 

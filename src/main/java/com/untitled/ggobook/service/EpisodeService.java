@@ -71,6 +71,7 @@ public class EpisodeService {
         }
 
         episode.setContent(content);
+        episode.setStatus(Status.PENDING);
         Episode savedEpisode = episodeRepository.save(episode);
 
         if(novel != null){

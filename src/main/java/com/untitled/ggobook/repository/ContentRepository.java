@@ -18,10 +18,6 @@ import java.util.List;
 
 public interface ContentRepository extends JpaRepository<Content, Long> {
 
-    // 기획서의 getInspectionList() 기능을 위한 메서드입니다.
-    // 검수 대기(PENDING) 상태인 작품들만 DB에서 쏙 뽑아옵니다.
-    // (JPA가 내부적으로 "SELECT * FROM content WHERE status = 'PENDING'" 쿼리를 실행합니다.)
-    List<Content> findByStatus(Status status);
 
     @Query("SELECT DISTINCT c FROM Content c " +
             "LEFT JOIN c.tags t " +
@@ -47,6 +43,13 @@ public interface ContentRepository extends JpaRepository<Content, Long> {
 
     @EntityGraph(attributePaths = {"author"})
     List<Content> findByTypeOrderByContentIdDesc(String type);
+
+    @EntityGraph(attributePaths = {"author"})
+    @Query("SELECT c FROM Content c WHERE c.contentId = :contentId")
+    Optional<Content> findByIdWithAuthor(@Param("contentId") Long contentId);
+
+    @Query("SELECT c FROM Content c LEFT JOIN FETCH c.author WHERE c.status IN (:statuses) ORDER BY c.createdAt DESC")
+    List<Content> findByStatusInWithAuthor(@Param("statuses") List<Status> statuses);
 
     List<Content> findByTypeAndTitleContainingOrTypeAndAuthor_NicknameContainingOrderByContentIdDesc(
             String type1, String title, String type2, String nickname
