@@ -23,7 +23,6 @@ import java.util.List;
 @RequiredArgsConstructor
 public class MyPageController {
 
-    // 🌟 갓 오브젝트(MyPageService) 1개를 버리고 전문 서비스 4개로 교체!
     private final MyProfileService myProfileService;
     private final MyLikeService myLikeService;
     private final MyActivityService myActivityService;
@@ -69,5 +68,14 @@ public class MyPageController {
             @AuthenticationPrincipal Long id) {
         List<MyRelayNovelDto> response = myRelayNovelService.getMyRelayNovels(id);
         return ResponseEntity.ok(response);
+    }
+
+    // ==========================================
+    // 🌟 추가: 회원 탈퇴 API
+    // ==========================================
+    @PostMapping("/withdraw")
+    public ResponseEntity<String> withdrawUser(@AuthenticationPrincipal Long id) {
+        myProfileService.withdrawUser(id);
+        return ResponseEntity.ok("회원 탈퇴 처리가 완료되었습니다.");
     }
 }

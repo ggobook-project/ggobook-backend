@@ -1,5 +1,6 @@
 package com.untitled.ggobook.domain;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.untitled.ggobook.domain.enums.Status;
 import jakarta.persistence.*;
@@ -84,4 +85,9 @@ public class Episode {
         this.status = Status.REJECTED;
         this.rejectReason = reason;
     }
+
+    @ToString.Exclude
+    @OneToMany(mappedBy = "episode", cascade = CascadeType.ALL)
+    @JsonIgnore
+    private List<Rating> ratings = new ArrayList<>();
 }

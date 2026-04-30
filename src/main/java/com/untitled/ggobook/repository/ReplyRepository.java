@@ -14,7 +14,8 @@ public interface ReplyRepository extends JpaRepository<Reply, Long> {
             "JOIN FETCH r.comment c " +
             "JOIN FETCH c.content " +
             "JOIN FETCH c.episode " +
-            "WHERE r.userId = :userId " +
+            // 🌟 핵심 수술: r.userId 를 r.user.id 로 변경!
+            "WHERE r.user.id = :userId " +
             "ORDER BY r.createdAt DESC")
     Slice<Reply> findMyReplies(@Param("userId") Long userId, Pageable pageable);
 }

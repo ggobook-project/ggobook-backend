@@ -43,6 +43,9 @@ public class Content {
     private String rejectReason;
     private LocalDateTime createdAt = LocalDateTime.now();
 
+    // 🌟 주간 랭킹 점수 (최근 7일 데이터 기반으로 매일 새벽 업데이트됨)
+    private Double weeklyScore = 0.0;
+
     @ToString.Exclude
     @OneToMany(mappedBy = "content", cascade = CascadeType.ALL, orphanRemoval = true)
     @JsonIgnore
@@ -53,10 +56,6 @@ public class Content {
     @JsonIgnore
     private List<ContentTag> tags = new ArrayList<>();
 
-    @ToString.Exclude
-    @OneToMany(mappedBy = "content", cascade = CascadeType.ALL)
-    @JsonIgnore
-    private List<Rating> ratings = new ArrayList<>();
 
     public void approve() {
         this.status = Status.APPROVED;

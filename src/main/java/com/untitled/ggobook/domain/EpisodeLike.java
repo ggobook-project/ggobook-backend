@@ -2,6 +2,7 @@ package com.untitled.ggobook.domain;
 
 import jakarta.persistence.*;
 import lombok.*;
+import java.time.LocalDateTime;
 
 @Entity
 @Getter
@@ -16,6 +17,9 @@ public class EpisodeLike {
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "episode_id", nullable = false)
     private Episode episode;
+
+    @Column(nullable = false)
+    private LocalDateTime createdAt = LocalDateTime.now();
 
     @Builder
     public EpisodeLike(Long userId, Episode episode) {

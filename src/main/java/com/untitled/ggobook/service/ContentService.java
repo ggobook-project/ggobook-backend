@@ -19,8 +19,6 @@ import org.springframework.web.multipart.MultipartFile;
 
 import java.util.List;
 
-
-// 작품 서비스
 @Service
 @Slf4j
 @RequiredArgsConstructor
@@ -36,11 +34,16 @@ public class ContentService {
     private final ContentTagRepository contentTagRepository;
 
     @Transactional
-    public Slice<Content> getContentList(String keyword, String genre, String type, Pageable pageable) {
+    public Slice<Content> getContentList(String keyword, String genre, String type, String sortType, Pageable pageable) {
         String searchKeyword = (keyword == null || keyword.isBlank()) ? null : keyword;
         String searchGenre = (genre == null || genre.isBlank()) ? null : genre;
 
-        return contentRepository.findContentList(searchKeyword, searchGenre, type, pageable);
+        // 🌟 핵심 수술: 프론트에서 "popular"라고 외치면 랭킹순 쿼리로 보내고, 아니면 기존 최신순 쿼리로 보냅니다!
+        if ("popular".equals(sortType)) {
+            return contentRepository.findPopularContentList(searchKeyword, searchGenre, type, pageable);
+        } else {
+            return contentRepository.findContentList(searchKeyword, searchGenre, type, pageable);
+        }
     }
 
     @Transactional

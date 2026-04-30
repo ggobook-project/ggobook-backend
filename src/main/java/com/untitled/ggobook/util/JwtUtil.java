@@ -17,7 +17,7 @@ public class JwtUtil {
     // Access Token은 15분 (900,000 밀리초)으로 짧게 설정!
     private final long accessTokenExpTime = 900000;
     // Refresh Token은 7일 (604,800,000 밀리초)로 길게 설정!
-    private final long refreshTokenExpTime = 54000000;
+    private final long refreshTokenExpTime = 604800000;
 
     public JwtUtil(@Value("${jwt.secret:this-is-my-super-secret-key-for-jwt-token-test-2026!@#}") String secretKey) {
         this.key = Keys.hmacShaKeyFor(secretKey.getBytes());

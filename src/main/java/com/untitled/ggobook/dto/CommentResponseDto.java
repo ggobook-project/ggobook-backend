@@ -24,6 +24,9 @@ public class CommentResponseDto {
     private Boolean isDeleted;
     private List<ReplyResponseDto> replies;
 
+    // 🌟닉네임 필드를 추가
+    private String nickname;
+
     public static CommentResponseDto from(Comment comment) {
         List<ReplyResponseDto> replyDtos = comment.getReplies().stream()
                 .map(ReplyResponseDto::from)
@@ -32,13 +35,14 @@ public class CommentResponseDto {
         return CommentResponseDto.builder()
                 .commentId(comment.getCommentId())
                 .userId(comment.getUser().getId())
+                .nickname(comment.getUser().getNickname() != null ? comment.getUser().getNickname() : "알 수 없음")
                 .commentText(comment.getIsDeleted() ? "삭제된 댓글입니다." : comment.getCommentText())
                 .isSpoiler(comment.getIsSpoiler())
                 .likeCount(comment.getLikeCount())
-                .dislikeCount(comment.getDislikeCount() != null ? comment.getDislikeCount() : 0) // null 방지
+                .dislikeCount(comment.getDislikeCount() != null ? comment.getDislikeCount() : 0)
                 .createdAt(comment.getCreatedAt())
                 .isDeleted(comment.getIsDeleted())
-                .replies(replyDtos)
+                .replies(replyDtos) // 완벽하게 포장된 답글 리스트
                 .build();
     }
 }

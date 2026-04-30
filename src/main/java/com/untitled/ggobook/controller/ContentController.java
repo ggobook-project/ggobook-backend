@@ -25,8 +25,11 @@ public class ContentController {
             @RequestParam(required = false) String keyword,
             @RequestParam(required = false) String genre,
             @RequestParam(required = false) String type,
+            // 🌟 핵심 수술: 프론트에서 인기순/최신순을 고를 수 있게 무전기를 뚫어줍니다. 기본값은 최신순(latest)
+            @RequestParam(required = false, defaultValue = "latest") String sortType,
             Pageable pageable) {
-        return contentService.getContentList(keyword, genre, type, pageable);
+        // 서비스로 sortType도 같이 넘겨줍니다!
+        return contentService.getContentList(keyword, genre, type, sortType, pageable);
     }
 
     @GetMapping("/my")
@@ -41,19 +44,15 @@ public class ContentController {
     @GetMapping("/{contentId}")
     public ResponseEntity<ContentDetailDto> getContentDetail(
             @PathVariable Long contentId,
-            @AuthenticationPrincipal Object principal, // 🌟 Object로 받아 Type Casting 에러 방지
+            @AuthenticationPrincipal Object principal,
             Pageable pageable) {
 
         Long userId = null;
-
-        // 🌟 들어온 정보가 숫자(Long)일 때만 userId에 담음. 비회원("anonymousUser")이면 자연스럽게 null로 통과.
         if (principal instanceof Long) {
             userId = (Long) principal;
         }
 
-        // 서비스 단으로 안전하게 넘김 (로그인이면 숫자, 아니면 null)
         ContentDetailDto response = contentService.getContentDetail(contentId, userId, pageable, "APPROVED");
-
         return ResponseEntity.ok(response);
     }
 
