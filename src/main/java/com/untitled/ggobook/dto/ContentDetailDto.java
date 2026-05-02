@@ -23,4 +23,9 @@ public class ContentDetailDto {
     private boolean isLiked;
 
     private List<ContentTag> tags;
+
+    private String description;
+    private String serialDay;
+    private String videoUrl;
+
 }

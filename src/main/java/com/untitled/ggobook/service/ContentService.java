@@ -22,7 +22,7 @@ import java.util.List;
 @Service
 @Slf4j
 @RequiredArgsConstructor
-public class ContentService {
+public class  ContentService {
 
     private final ContentRepository contentRepository;
     private final EpisodeRepository episodeRepository;
@@ -87,7 +87,10 @@ public class ContentService {
                 content.getThumbnailUrl(),
                 episodeDtos,
                 isLiked,
-                tags
+                tags,
+                content.getDescription(),
+                content.getSerialDay(),
+                content.getThumbnailUrl()
 
 
         );
@@ -107,15 +110,18 @@ public class ContentService {
 
     @Transactional
     public void updateContent(Content content, MultipartFile multipartFile){
-        if(contentRepository.existsById(content.getContentId())) {
-            if (!multipartFile.isEmpty()) {
-                fileUtil.deleteFromS3(content.getThumbnailUrl());
-                content.setThumbnailUrl(fileUtil.uploadToS3(multipartFile));
-            }
-            contentRepository.save(content);
-        }else{
-            throw new IllegalArgumentException("해당 작품이 없습니다.");
+        Content existing = contentRepository.findById(content.getContentId())
+                .orElseThrow(() -> new IllegalArgumentException("해당 작품이 없습니다."));
+
+        content.setAuthor(existing.getAuthor());
+
+        if (multipartFile != null && !multipartFile.isEmpty()) {
+            fileUtil.deleteFromS3(existing.getThumbnailUrl());
+            content.setThumbnailUrl(fileUtil.uploadToS3(multipartFile));
+        } else {
+            content.setThumbnailUrl(existing.getThumbnailUrl());
         }
+        contentRepository.save(content);
     }
 
     @Transactional
