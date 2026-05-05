@@ -1,5 +1,6 @@
 package com.untitled.ggobook.controller;
 
+import com.untitled.ggobook.domain.Content;
 import com.untitled.ggobook.repository.ReadingRepository;
 import com.untitled.ggobook.service.ReadingService;
 import lombok.RequiredArgsConstructor;
@@ -25,6 +26,13 @@ public class ReadingController {
             @PathVariable Long contentId
     ) {
         return ResponseEntity.ok(readingService.getReadEpisodeIds(id, contentId));
+    }
+
+    @GetMapping("/contents")
+    public ResponseEntity<List<Content>> getReadContents(
+            @AuthenticationPrincipal Long id
+    ) {
+        return ResponseEntity.ok(readingService.getReadContents(id));
     }
 
 }

@@ -1,5 +1,6 @@
 package com.untitled.ggobook.service;
 
+import com.untitled.ggobook.domain.Content;
 import com.untitled.ggobook.repository.ReadingRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -22,5 +23,10 @@ public class ReadingService {
                 .stream()
                 .map(r -> r.getEpisode().getEpisodeId())
                 .collect(Collectors.toList());
+    }
+
+    @Transactional(readOnly = true)
+    public List<Content> getReadContents(Long userId) {
+        return readingRepository.findDistinctContentsByUserId(userId);
     }
 }
