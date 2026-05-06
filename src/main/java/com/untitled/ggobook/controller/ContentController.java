@@ -27,9 +27,10 @@ public class ContentController {
             @RequestParam(required = false) String type,
             // 🌟 핵심 수술: 프론트에서 인기순/최신순을 고를 수 있게 무전기를 뚫어줍니다. 기본값은 최신순(latest)
             @RequestParam(required = false, defaultValue = "latest") String sortType,
+            @RequestParam(required = false) String serialDay,
             Pageable pageable) {
         // 서비스로 sortType도 같이 넘겨줍니다!
-        return contentService.getContentList(keyword, genre, type, sortType, pageable);
+        return contentService.getContentList(keyword, genre, type, sortType,serialDay, pageable);
     }
 
     @GetMapping("/my")

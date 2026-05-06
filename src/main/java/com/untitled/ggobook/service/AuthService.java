@@ -1,7 +1,7 @@
 package com.untitled.ggobook.service;
 
 import com.untitled.ggobook.domain.MemberSuspend;
-import com.untitled.ggobook.domain.SignupRequest;
+import com.untitled.ggobook.dto.SignupRequestDto;
 import com.untitled.ggobook.domain.User;
 import com.untitled.ggobook.domain.Wallet;
 import com.untitled.ggobook.domain.enums.UserStatus;
@@ -53,7 +53,7 @@ public class AuthService {
 
     // 4. 회원가입 로직
     @Transactional
-    public void signup(SignupRequest request) {
+    public void signup(SignupRequestDto request) {
         if (userRepository.existsByUserId(request.getUserId()) ||
                 userRepository.existsByEmail(request.getEmail()) ||
                 userRepository.existsByNickname(request.getNickname())) {
@@ -104,7 +104,7 @@ public class AuthService {
                 user.release();
             } else {
                 // [차단 진행] 아직 정지 중이면 장부에서 최근 사유를 꺼내옵니다.
-                MemberSuspend activeSuspend = memberSuspendRepository.findActiveSuspend(user.getId(), now)
+                MemberSuspend activeSuspend = memberSuspendRepository.findFirstByUserIdAndEndDateAfterOrderByEndDateDesc(user.getId(), now)
                         .orElse(null);
 
                 String reason = (activeSuspend != null) ? activeSuspend.getReason() : "관리자 규정 위반";

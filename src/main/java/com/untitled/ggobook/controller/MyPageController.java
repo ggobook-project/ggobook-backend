@@ -39,8 +39,10 @@ public class MyPageController {
     @PutMapping
     public ResponseEntity<String> updateMyInfo(
             @AuthenticationPrincipal Long id,
-            @RequestBody UpdateMyInfoRequest request) {
-        myProfileService.updateMyInfo(id, request);
+            @RequestPart(value = "request") @jakarta.validation.Valid UpdateMyInfoRequest request,
+            @RequestPart(value = "file", required = false) org.springframework.web.multipart.MultipartFile file) {
+
+        myProfileService.updateMyInfo(id, request, file);
         return ResponseEntity.ok("회원 정보가 성공적으로 수정되었습니다.");
     }
 

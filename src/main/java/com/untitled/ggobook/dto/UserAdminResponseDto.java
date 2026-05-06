@@ -16,6 +16,8 @@ public class UserAdminResponseDto {
     private UserStatus status;
     private LocalDateTime suspensionEndDate;
 
+    private String profileImageUrl;
+
     public UserAdminResponseDto(User user) {
         this.id = user.getId();
         this.userId = user.getUserId();
@@ -24,5 +26,6 @@ public class UserAdminResponseDto {
         this.email = user.getEmail();
         this.status = user.getStatus();
         this.suspensionEndDate = user.getSuspensionEndDate();
+        this.profileImageUrl = user.getProfileImageUrl();
     }
 }

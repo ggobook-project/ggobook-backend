@@ -10,6 +10,8 @@ import com.untitled.ggobook.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import com.untitled.ggobook.domain.MemberSuspend;
+import com.untitled.ggobook.repository.MemberSuspendRepository;
 
 import java.util.List;
 
@@ -19,6 +21,7 @@ public class AdminReportService {
 
     private final ReportRepository reportRepository;
     private final UserRepository userRepository;
+    private final MemberSuspendRepository memberSuspendRepository;
 
     // 관리자 엔티티 조회 공통 메서드 (private이므로 @Transactional 생략 가능하지만 유지)
     private User getAdmin(Long adminId) {
@@ -50,9 +53,20 @@ public class AdminReportService {
         report.resolveReport(admin, processReason);
 
         // 2. 신고당한 유저 정지 처리
-        report.getReportedUser().suspend(duration);
+        User reportedUser = report.getReportedUser();
+        reportedUser.suspend(duration);
 
-        // 🌟 3. 일괄 처리: 동일한 게시물에 대한 다른 모든 미처리 신고도 같이 해결
+        MemberSuspend suspendRecord = MemberSuspend.builder()
+                .user(reportedUser)
+                .admin(admin)
+                .reason(processReason) // 관리자가 적은 진짜 사유 저장
+                .duration(duration)
+                .endDate(reportedUser.getSuspensionEndDate()) // User에 세팅된 종료일 복사
+                .build();
+
+        memberSuspendRepository.save(suspendRecord); // 장부 DB에 저장!
+
+        // 4. 일괄 처리: 동일한 게시물에 대한 다른 모든 미처리 신고도 같이 해결
         resolveDuplicateReports(report.getTargetType(), report.getTargetId(), admin, "[일괄 처리] " + processReason);
     }
 

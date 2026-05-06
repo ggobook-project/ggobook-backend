@@ -59,6 +59,10 @@ public class User {
 
     private LocalDateTime suspensionEndDate; // 정지 해제 예정 시간
 
+
+    @Column(length = 500)
+    private String profileImageUrl;
+
     // ==========================================
     // 정지 및 해제 비즈니스 로직 (도메인 메서드)
     // ==========================================
