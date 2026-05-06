@@ -47,7 +47,7 @@ public class EpisodeService {
                 .orElseThrow(() -> new IllegalArgumentException("해당 회차를 찾을 수 없습니다."));
         if(id != null) {
             Reading reading = readingRepository
-                    .findByUserIdAndEpisode(id, episode)
+                    .findByUserIdAndContent(id, episode.getContent())
                     .orElse(new Reading());
             reading.setEpisode(episode);
             reading.setUserId(id);
