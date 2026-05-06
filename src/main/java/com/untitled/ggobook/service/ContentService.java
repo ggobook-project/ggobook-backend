@@ -34,15 +34,16 @@ public class  ContentService {
     private final ContentTagRepository contentTagRepository;
 
     @Transactional
-    public Slice<Content> getContentList(String keyword, String genre, String type, String sortType, Pageable pageable) {
+    public Slice<Content> getContentList(String keyword, String genre, String type, String sortType,String serialDay, Pageable pageable) {
         String searchKeyword = (keyword == null || keyword.isBlank()) ? null : keyword;
         String searchGenre = (genre == null || genre.isBlank()) ? null : genre;
+        String searchDay = (serialDay == null || serialDay.isBlank()) ? null : serialDay;
 
         // 🌟 핵심 수술: 프론트에서 "popular"라고 외치면 랭킹순 쿼리로 보내고, 아니면 기존 최신순 쿼리로 보냅니다!
         if ("popular".equals(sortType)) {
-            return contentRepository.findPopularContentList(searchKeyword, searchGenre, type, pageable);
+            return contentRepository.findPopularContentList(searchKeyword, searchGenre, type, searchDay, pageable);
         } else {
-            return contentRepository.findContentList(searchKeyword, searchGenre, type, pageable);
+            return contentRepository.findContentList(searchKeyword, searchGenre, type,searchDay, pageable);
         }
     }
 

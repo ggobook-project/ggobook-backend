@@ -1,6 +1,7 @@
 package com.untitled.ggobook.dto;
 
 import com.untitled.ggobook.domain.Comment;
+import com.untitled.ggobook.domain.enums.UserStatus;
 import lombok.Builder;
 import lombok.Getter;
 import lombok.Setter; // 🌟 추가
@@ -27,6 +28,8 @@ public class CommentResponseDto {
     // 🌟닉네임 필드를 추가
     private String nickname;
 
+    private String profileImageUrl;
+
     public static CommentResponseDto from(Comment comment) {
         List<ReplyResponseDto> replyDtos = comment.getReplies().stream()
                 .map(ReplyResponseDto::from)
@@ -36,6 +39,7 @@ public class CommentResponseDto {
                 .commentId(comment.getCommentId())
                 .userId(comment.getUser().getId())
                 .nickname(comment.getUser().getNickname() != null ? comment.getUser().getNickname() : "알 수 없음")
+                .profileImageUrl(comment.getUser().getStatus() == UserStatus.WITHDRAWN ? null : comment.getUser().getProfileImageUrl())
                 .commentText(comment.getIsDeleted() ? "삭제된 댓글입니다." : comment.getCommentText())
                 .isSpoiler(comment.getIsSpoiler())
                 .likeCount(comment.getLikeCount())

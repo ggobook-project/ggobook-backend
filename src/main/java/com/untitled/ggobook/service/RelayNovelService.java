@@ -56,31 +56,42 @@ public class RelayNovelService {
     // 2. 상세 조회
     @Transactional(readOnly = true)
     public RelayNovelDTO getRelayNovelDetail(Long novelId) {
-        // 1. 이미 entries까지 한 번에 JOIN FETCH로 가져오는 레포지토리 메서드 사용
+        // 1. 이미 entries까지 한 번에 JOIN FETCH로 가져오는 레포지토리 메서드 사용 (기존 완벽 유지)
         RelayNovel novel = relayNovelRepository.findByIdWithEntries(novelId)
                 .orElseThrow(() -> new IllegalArgumentException("해당 소설을 찾을 수 없습니다."));
 
-        // 2. 소설 작성자(starter)와 회차 작성자들의 ID 목록을 수집
+        // 2. 소설 작성자(starter)와 회차 작성자들의 ID 목록을 수집 (기존 완벽 유지)
         Set<Long> userIds = novel.getEntries().stream()
                 .map(RelayEntry::getUserId)
                 .collect(Collectors.toSet());
         userIds.add(novel.getUserId()); // 소설 작성자도 추가
 
-        // 3. 닉네임 맵 한 번에 조회 (쿼리 1번)
-        Map<Long, String> nicknameMap = userRepository.findAllById(userIds).stream()
-                .collect(Collectors.toMap(User::getId, User::getNickname));
+        // 3. 닉네임 맵 한 번에 조회 (🌟 업그레이드: String 닉네임만 담지 말고 User 객체를 통째로 담기!)
+        Map<Long, User> userMap = userRepository.findAllById(userIds).stream()
+                .collect(Collectors.toMap(User::getId, user -> user));
 
-        // 4. 소설 작성자 닉네임 매핑
-        String starterNickname = nicknameMap.getOrDefault(novel.getUserId(), "알 수 없음");
+        // 4. 소설 작성자 닉네임 매핑 (🌟 업그레이드: User에서 닉네임을 꺼내면서 탈퇴 여부까지 체크!)
+        User starter = userMap.get(novel.getUserId());
+        String starterNickname = (starter != null && starter.getStatus() != com.untitled.ggobook.domain.enums.UserStatus.WITHDRAWN)
+                ? (starter.getNickname() != null ? starter.getNickname() : "알 수 없음")
+                : "탈퇴한 회원";
 
-        // 5. DTO 생성 (닉네임 전달)
+        // 5. DTO 생성 (닉네임 전달) (기존 완벽 유지)
         RelayNovelDTO dto = new RelayNovelDTO(novel, starterNickname);
 
-        // 6. 🌟 EntryDTO 닉네임 매핑 로직 추가
+        // 6. EntryDTO 닉네임 매핑 로직 추가 (🌟 업그레이드: 닉네임뿐만 아니라 사진도 넣고, 탈퇴자면 가리기!)
         dto.setEntries(novel.getEntries().stream()
                 .map(entry -> {
                     EntryDTO eDto = new EntryDTO(entry);
-                    eDto.setNickname(nicknameMap.getOrDefault(entry.getUserId(), "알 수 없음"));
+                    User author = userMap.get(entry.getUserId());
+
+                    if (author != null && author.getStatus() != com.untitled.ggobook.domain.enums.UserStatus.WITHDRAWN) {
+                        eDto.setNickname(author.getNickname() != null ? author.getNickname() : "알 수 없음");
+                        eDto.setProfileImageUrl(author.getProfileImageUrl()); // 📸 사진 챙기기
+                    } else {
+                        eDto.setNickname("탈퇴한 회원"); // 🚫 탈퇴자 익명 처리
+                        eDto.setProfileImageUrl(null);   // 🚫 탈퇴자 사진 가리기
+                    }
                     return eDto;
                 })
                 .collect(Collectors.toList()));

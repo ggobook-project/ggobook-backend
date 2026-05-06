@@ -1,7 +1,7 @@
 package com.untitled.ggobook.controller;
 
 import com.untitled.ggobook.dto.LoginRequestDto;
-import com.untitled.ggobook.domain.SignupRequest;
+import com.untitled.ggobook.dto.SignupRequestDto;
 import com.untitled.ggobook.domain.User;
 import com.untitled.ggobook.service.AuthService;
 import com.untitled.ggobook.service.EmailService;
@@ -72,7 +72,7 @@ public class AuthController {
     // 4. 회원가입 (검문소 설치 버전)
     @PostMapping("/signup")
     public ResponseEntity<?> signup(
-            @Valid @RequestBody SignupRequest request,
+            @Valid @RequestBody SignupRequestDto request,
             BindingResult bindingResult
     ) {
         if (bindingResult.hasErrors()) {

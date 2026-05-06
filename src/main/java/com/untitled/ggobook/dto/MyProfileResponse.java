@@ -16,6 +16,8 @@ public class MyProfileResponse {
     // 나중에 Point 도메인과 연동할 때 쓸 포인트 변수 (미리 세팅)
     // private int pointBalance;
 
+    private String profileImageUrl;
+
     // 내가 작성한 글 목록을 함께 담아줍니다.
     private List<MyPostDto> myPosts;
 }

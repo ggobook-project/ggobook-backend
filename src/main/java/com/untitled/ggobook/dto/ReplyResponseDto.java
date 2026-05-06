@@ -1,14 +1,15 @@
 package com.untitled.ggobook.dto;
 
 import com.untitled.ggobook.domain.Reply;
+import com.untitled.ggobook.domain.enums.UserStatus;
 import lombok.Builder;
 import lombok.Getter;
-import lombok.Setter; // 🌟 추가
+import lombok.Setter;
 
 import java.time.LocalDateTime;
 
 @Getter
-@Setter // 🌟 추가
+@Setter
 @Builder
 public class ReplyResponseDto {
     private Long replyId;
@@ -17,17 +18,20 @@ public class ReplyResponseDto {
     private LocalDateTime createdAt;
     private Boolean isDeleted;
     private Integer likeCount;
-    private Integer dislikeCount; // 🌟 추가
-    private String myReaction;    // 🌟 추가
+    private Integer dislikeCount;
+    private String myReaction;
 
-    //🌟 추가  닉네임
+
     private String nickname;
+
+    private String profileImageUrl;
 
     public static ReplyResponseDto from(Reply reply) {
         return ReplyResponseDto.builder()
                 .replyId(reply.getReplyId())
                 .userId(reply.getUser().getId()) // user 객체에서 꺼냄
                 .nickname(reply.getUser().getNickname() != null ? reply.getUser().getNickname() : "알 수 없음") // 닉네임 꺼냄!
+                .profileImageUrl(reply.getUser().getStatus() == UserStatus.WITHDRAWN ? null : reply.getUser().getProfileImageUrl())
                 .replyText(reply.getIsDeleted() ? "삭제된 답글입니다." : reply.getReplyText())
                 .createdAt(reply.getCreatedAt())
                 .isDeleted(reply.getIsDeleted())

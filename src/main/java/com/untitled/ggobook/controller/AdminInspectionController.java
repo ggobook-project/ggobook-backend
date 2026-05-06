@@ -3,6 +3,7 @@ package com.untitled.ggobook.controller;
 import com.untitled.ggobook.domain.Content;
 import com.untitled.ggobook.domain.Episode;
 import com.untitled.ggobook.dto.AdminContentDetailDto;
+import com.untitled.ggobook.dto.AdminEpisodeDetailDto;
 import com.untitled.ggobook.service.AdminInspectionService;
 import com.untitled.ggobook.service.EpisodeService;
 import lombok.RequiredArgsConstructor;
@@ -42,8 +43,9 @@ public class AdminInspectionController {
 
     // 2. 특정 회차 상세 내용 조회 (관리자가 클릭 시 원고 읽기용)
     @GetMapping("/episodes/{episodeId}")
-    public ResponseEntity<Episode> getEpisodeDetail(@PathVariable Long episodeId) {
-        return ResponseEntity.ok(episodeService.getEpisodeDetail(episodeId));
+    public ResponseEntity<AdminEpisodeDetailDto> getEpisodeDetail(@PathVariable Long episodeId) {
+        Episode episode = adminService.getEpisodeDetail(episodeId);
+        return ResponseEntity.ok(AdminEpisodeDetailDto.from(episode));
     }
 
     // 3. 회차 승인 처리 (AI 요약 + 작품 승인 연동)

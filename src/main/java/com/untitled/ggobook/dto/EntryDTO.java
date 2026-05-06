@@ -10,6 +10,8 @@ public class EntryDTO {
     private Long entryId;
     private Long userId;
     private String nickname;
+
+    private String profileImageUrl;
     private int entryOrder;
     private String entryText;
     private LocalDateTime createdAt;

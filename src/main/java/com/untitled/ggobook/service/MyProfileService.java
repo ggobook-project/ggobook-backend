@@ -7,6 +7,7 @@ import com.untitled.ggobook.dto.MyProfileResponse;
 import com.untitled.ggobook.dto.UpdateMyInfoRequest;
 import com.untitled.ggobook.repository.ContentRepository;
 import com.untitled.ggobook.repository.UserRepository;
+import com.untitled.ggobook.util.FileUtil;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
@@ -22,6 +23,7 @@ public class MyProfileService {
     private final UserRepository userRepository;
     private final ContentRepository contentRepository;
     private final PasswordEncoder passwordEncoder;
+    private final FileUtil fileUtil;
 
     @Transactional(readOnly = true)
     public MyProfileResponse getMyProfile(Long id) {
@@ -39,15 +41,27 @@ public class MyProfileService {
                 .name(user.getName())
                 .nickname(user.getNickname())
                 .email(user.getEmail())
+                .profileImageUrl(user.getProfileImageUrl())
                 .myPosts(postDtos)
                 .build();
     }
 
     @Transactional
-    public void updateMyInfo(Long id, UpdateMyInfoRequest request) {
+    public void updateMyInfo(Long id, UpdateMyInfoRequest request, org.springframework.web.multipart.MultipartFile file) {
         User user = userRepository.findById(id)
                 .orElseThrow(() -> new IllegalArgumentException("회원 정보를 찾을 수 없습니다."));
 
+        // 1. 프로필 이미지 업데이트 로직
+        if (file != null && !file.isEmpty()) {
+            // 기존 이미지가 있으면 S3에서 삭제
+            if (user.getProfileImageUrl() != null) {
+                fileUtil.deleteFromS3(user.getProfileImageUrl());
+            }
+            // 새 이미지 업로드 및 URL 저장
+            user.setProfileImageUrl(fileUtil.uploadToS3(file));
+        }
+
+        // 2. 닉네임 업데이트 로직
         if (request.getNickname() != null && !request.getNickname().equals(user.getNickname())) {
             if (userRepository.existsByNickname(request.getNickname())) {
                 throw new IllegalArgumentException("이미 사용 중인 닉네임입니다.");
@@ -55,6 +69,7 @@ public class MyProfileService {
             user.setNickname(request.getNickname());
         }
 
+        // 3. 비밀번호 업데이트 로직
         if (request.getNewPassword() != null && !request.getNewPassword().trim().isEmpty()) {
             if (request.getCurrentPassword() == null ||
                     !passwordEncoder.matches(request.getCurrentPassword(), user.getPassword())) {

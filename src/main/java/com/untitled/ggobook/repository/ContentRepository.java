@@ -20,10 +20,12 @@ public interface ContentRepository extends JpaRepository<Content, Long> {
             "WHERE (:keyword IS NULL OR c.title LIKE %:keyword% OR t.tagName LIKE %:keyword%) " +
             "AND (:genre IS NULL OR c.genre = :genre) " +
             "AND (:type IS NULL OR c.type = :type) " +
+            "AND (:serialDay IS NULL OR c.serialDay = :serialDay) " +
             "ORDER BY c.createdAt DESC")
     Slice<Content> findContentList(@Param("keyword") String keyword,
                                    @Param("genre") String genre,
                                    @Param("type") String type,
+                                   @Param("serialDay") String serialDay,
                                    Pageable pageable);
 
     @Override
@@ -62,10 +64,12 @@ public interface ContentRepository extends JpaRepository<Content, Long> {
             "WHERE (:keyword IS NULL OR c.title LIKE %:keyword%) " +
             "AND (:genre IS NULL OR c.genre = :genre)" +
             "AND (:type IS NULL OR c.type = :type)" +
+            "AND (:serialDay IS NULL OR c.serialDay = :serialDay) " +
             "ORDER BY c.weeklyScore DESC, c.createdAt DESC")
     Slice<Content> findPopularContentList(@Param("keyword") String keyword,
                                           @Param("genre") String genre,
                                           @Param("type") String type,
+                                          @Param("serialDay") String serialDay,
                                           Pageable pageable);
 
     Slice<Content> findByAuthorIdOrderByCreatedAtDesc(Long authorId, Pageable pageable);
