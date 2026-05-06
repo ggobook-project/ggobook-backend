@@ -49,8 +49,6 @@ public class AdminInspectionService {
             } catch (Exception e) {
                 e.printStackTrace();
             }
-        } else {
-            System.out.println("DEBUG: [알림] 추출할 텍스트가 없어 요약을 건너뜁니다.");
         }
 
         episode.approve(scheduledAt, aiSummary);
@@ -59,15 +57,18 @@ public class AdminInspectionService {
             content.approve();
         }
 
-        String approveMessage = String.format("[%s] %d화가 승인되었습니다. 연재를 시작합니다!",
-                content.getTitle(), episode.getEpisodeNumber());
+        // 🌟 수정됨: 작가가 있을 때만 알림 전송 (에러 방지)
+        if (content.getAuthor() != null) {
+            String approveMessage = String.format("[%s] %d화가 승인되었습니다. 연재를 시작합니다!",
+                    content.getTitle(), episode.getEpisodeNumber());
 
-        notificationService.send(
-                content.getAuthor().getId(),
-                approveMessage,
-                Notification.NotificationType.APPROVE,
-                "/author/contents"
-        );
+            notificationService.send(
+                    content.getAuthor().getId(),
+                    approveMessage,
+                    Notification.NotificationType.APPROVE,
+                    "/author/contents"
+            );
+        }
     }
 
     @Transactional
@@ -85,17 +86,20 @@ public class AdminInspectionService {
             content.reject("1화 반려로 인한 기각: " + rejectReason);
         }
 
-        String rejectMessage = String.format("[%s] %d화가 반려되었습니다. [사유: %s]",
-                content.getTitle(),
-                episode.getEpisodeNumber(),
-                rejectReason);
+        // 🌟 수정됨: 작가가 있을 때만 알림 전송 (에러 방지)
+        if (content.getAuthor() != null) {
+            String rejectMessage = String.format("[%s] %d화가 반려되었습니다. [사유: %s]",
+                    content.getTitle(),
+                    episode.getEpisodeNumber(),
+                    rejectReason);
 
-        notificationService.send(
-                content.getAuthor().getId(),
-                rejectMessage,
-                Notification.NotificationType.REJECT,
-                "/author/contents"
-        );
+            notificationService.send(
+                    content.getAuthor().getId(),
+                    rejectMessage,
+                    Notification.NotificationType.REJECT,
+                    "/author/contents"
+            );
+        }
     }
 
     @Transactional(readOnly = true)
