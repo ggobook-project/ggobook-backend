@@ -1,7 +1,8 @@
 package com.untitled.ggobook.repository;
 
 import com.untitled.ggobook.domain.Content;
-import com.untitled.ggobook.domain.Episode;
+import com.untitled.ggobook.domain.enums.Status;
+import org.springframework.data.domain.Page; // 🌟 Page 임포트
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Slice;
 import org.springframework.data.jpa.repository.EntityGraph;
@@ -9,15 +10,10 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
+import java.util.List;
 import java.util.Optional;
 
-// 작품 리포지토리
-import com.untitled.ggobook.domain.enums.Status;
-
-import java.util.List;
-
 public interface ContentRepository extends JpaRepository<Content, Long> {
-
 
     @Query("SELECT DISTINCT c FROM Content c " +
             "LEFT JOIN c.tags t " +
@@ -33,7 +29,6 @@ public interface ContentRepository extends JpaRepository<Content, Long> {
     @Override
     Optional<Content> findById(Long contentId);
 
-    // 특정 작가의 작품만 모아보는 기능이 필요할 때 사용합니다.
     List<Content> findByAuthorId(Long authorId);
 
     @Query("SELECT c FROM Content c " +
@@ -63,7 +58,6 @@ public interface ContentRepository extends JpaRepository<Content, Long> {
 
     long countByStatus(Status status);
 
-    // 🌟 추가: 인기순(랭킹순)으로 가져오는 전용 쿼리! (weeklyScore 높은 순)
     @Query("SELECT c FROM Content c " +
             "WHERE (:keyword IS NULL OR c.title LIKE %:keyword%) " +
             "AND (:genre IS NULL OR c.genre = :genre)" +
@@ -76,4 +70,19 @@ public interface ContentRepository extends JpaRepository<Content, Long> {
 
     Slice<Content> findByAuthorIdOrderByCreatedAtDesc(Long authorId, Pageable pageable);
 
+    // ==========================================
+    // 🌟 [추가] 관리자 작품 관리 페이지 전용 Pageable 쿼리
+    // DB에서부터 키워드, 요일 필터링을 거쳐 딱 10개만 가져오고 총 페이지 수를 계산합니다.
+    // ==========================================
+    @Query("SELECT c FROM Content c " +
+            "LEFT JOIN c.author a " +
+            "WHERE c.type = :type " +
+            "AND (:day IS NULL OR c.serialDay = :day) " +
+            "AND (:keyword IS NULL OR c.title LIKE %:keyword% OR a.nickname LIKE %:keyword%)")
+    Page<Content> findAdminContentsWithPaging(
+            @Param("type") String type,
+            @Param("keyword") String keyword,
+            @Param("day") String day,
+            Pageable pageable
+    );
 }

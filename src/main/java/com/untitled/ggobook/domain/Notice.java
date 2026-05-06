@@ -17,13 +17,13 @@ public class Notice {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long noticeId;
 
+    private Long adminId; // 작성 관리자 ID
+
     @Column(nullable = false, length = 200)
     private String title;
 
     @Column(nullable = false, columnDefinition = "TEXT")
     private String content;
-
-    private Long adminId; // 작성 관리자 ID
 
     private Long viewCount = 0L;
 

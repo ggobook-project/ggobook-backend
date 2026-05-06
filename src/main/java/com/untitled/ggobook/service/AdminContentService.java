@@ -11,6 +11,8 @@ import com.untitled.ggobook.dto.NovelListDTO;
 import com.untitled.ggobook.repository.ContentRepository;
 import com.untitled.ggobook.repository.EpisodeRepository;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page; // 🌟 추가
+import org.springframework.data.domain.Pageable; // 🌟 추가
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -25,48 +27,31 @@ public class AdminContentService {
     private final ContentRepository contentRepository;
     private final EpisodeRepository episodeRepository;
 
+    // 🌟 수정: Pageable을 파라미터로 받고 Page<?>를 반환하도록 변경
     @Transactional(readOnly = true)
-    public List<?> getContentsByType(String type, String keyword, String day) {
-        List<Content> contents;
+    public Page<?> getContentsByType(String type, String keyword, String day, Pageable pageable) {
 
-        // 요일 필터링 (day가 "전체"면 null로 처리하여 쿼리에서 무시하게 함)
-        String filterDay = (day == null || "전체".equals(day)) ? null : day;
+        // 검색어와 요일이 빈 값이면 null로 변환하여 동적 쿼리가 무시하도록 처리
+        String filterDay = (day == null || "전체".equals(day) || day.trim().isEmpty()) ? null : day;
+        String filterKeyword = (keyword == null || keyword.trim().isEmpty()) ? null : keyword;
 
-        if (keyword != null && !keyword.isEmpty()) {
-            // 검색어가 있을 때는 기존 복합 검색 로직 사용
-            contents = contentRepository.findByTypeAndTitleContainingOrTypeAndAuthor_NicknameContainingOrderByContentIdDesc(
-                    type, keyword, type, keyword);
+        // 🌟 Repository의 페이징 전용 쿼리 호출 (DB에서 필터링 완료)
+        Page<Content> contents = contentRepository.findAdminContentsWithPaging(type, filterKeyword, filterDay, pageable);
 
-            // 검색 결과 중 요일 필터가 있다면 추가 필터링 (필요시)
-            if (filterDay != null) {
-                contents = contents.stream()
-                        .filter(c -> filterDay.equals(c.getSerialDay()))
-                        .collect(Collectors.toList());
-            }
-        } else {
-            // 검색어가 없으면 새로 만든 타입+요일 조회 메서드 사용
-            contents = contentRepository.findByTypeAndSerialDay(type, filterDay);
+        // 🌟 Page.map()을 사용하면 내부의 데이터들만 DTO로 깔끔하게 변환되면서 Page 구조(총 페이지 수 등)는 유지됩니다.
+        if ("웹툰".equals(type) || "WEBTOON".equals(type)) {
+            return contents.map(ComicToonListDTO::new);
+        } else if ("웹소설".equals(type) || "NOVEL".equals(type)) {
+            return contents.map(NovelListDTO::new);
         }
 
-        // DTO 변환 로직 (기존과 동일)
-        if ("웹툰".equals(type)) {
-            return contents.stream().map(ComicToonListDTO::new).collect(Collectors.toList());
-        } else if ("웹소설".equals(type)) {
-            return contents.stream().map(NovelListDTO::new).collect(Collectors.toList());
-        }
         throw new IllegalArgumentException("지원하지 않는 콘텐츠 타입입니다: " + type);
     }
 
-    /**
-     * 🌟 특정 작품의 전체 회차 목록 조회
-     * @param contentId 작품 ID
-     * @return 회차 DTO 리스트 (회차 번호 순으로 정렬)
-     */
     @Transactional(readOnly = true)
     public List<EpisodeDTO> getEpisodeList(Long contentId) {
-        // 1. EpisodeRepository를 통해 contentId가 일치하는 회차들을 가져옵니다.
         return episodeRepository.findByContent_ContentIdOrderByEpisodeNumberDesc(contentId).stream()
-                .map(EpisodeDTO::new) // 🌟 엔티티를 DTO로 변환
+                .map(EpisodeDTO::new)
                 .collect(Collectors.toList());
     }
 
@@ -76,19 +61,16 @@ public class AdminContentService {
                 .orElseThrow(() -> new IllegalArgumentException("작품을 찾을 수 없습니다.")));
     }
 
-    // 🌟 회차 상태를 토글(공개<->비공개)하는 메서드
     @Transactional
     public void toggleEpisodeBlindStatus(Long episodeId) {
         Episode episode = episodeRepository.findById(episodeId)
                 .orElseThrow(() -> new IllegalArgumentException("해당 회차를 찾을 수 없습니다."));
 
-        // 🌟 핵심 로직: 상태가 PUBLISHED면 BLINDED로, BLINDED면 PUBLISHED로 변경
         if (episode.getStatus() == Status.PUBLISHED) {
             episode.setStatus(Status.BLINDED);
         } else if (episode.getStatus() == Status.BLINDED) {
             episode.setStatus(Status.PUBLISHED);
         } else {
-            // 이미 반려되거나 임시 저장된 글은 블라인드 처리할 필요가 없으므로 막아둡니다.
             throw new IllegalStateException("공개(PUBLISHED) 또는 블라인드(BLINDED) 상태의 회차만 상태를 변경할 수 있습니다.");
         }
     }
@@ -100,11 +82,10 @@ public class AdminContentService {
 
         EpisodeDTO dto = new EpisodeDTO(episode);
 
-        // 데이터 타입 분기 처리
         if (!episode.getComicToons().isEmpty()) {
             dto.setContentType("WEBTOON");
             dto.setImageUrls(episode.getComicToons().stream()
-                    .sorted(Comparator.comparing(ComicToon::getImageOrder)) // 🌟 정렬 중요!
+                    .sorted(Comparator.comparing(ComicToon::getImageOrder))
                     .map(ComicToon::getImageUrl).collect(Collectors.toList()));
         } else if (episode.getNovel() != null) {
             dto.setContentType("NOVEL");
