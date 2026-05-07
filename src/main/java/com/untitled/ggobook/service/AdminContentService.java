@@ -65,13 +65,12 @@ public class AdminContentService {
     public void toggleEpisodeBlindStatus(Long episodeId) {
         Episode episode = episodeRepository.findById(episodeId)
                 .orElseThrow(() -> new IllegalArgumentException("해당 회차를 찾을 수 없습니다."));
-
-        if (episode.getStatus() == Status.PUBLISHED) {
+        if (episode.getStatus() == Status.PUBLISHED || episode.getStatus() == Status.APPROVED) {
             episode.setStatus(Status.BLINDED);
         } else if (episode.getStatus() == Status.BLINDED) {
-            episode.setStatus(Status.PUBLISHED);
+            episode.setStatus(Status.APPROVED);
         } else {
-            throw new IllegalStateException("공개(PUBLISHED) 또는 블라인드(BLINDED) 상태의 회차만 상태를 변경할 수 있습니다.");
+            throw new IllegalStateException("공개 중이거나 블라인드 상태인 회차만 변경할 수 있습니다. (현재 상태: " + episode.getStatus() + ")");
         }
     }
 

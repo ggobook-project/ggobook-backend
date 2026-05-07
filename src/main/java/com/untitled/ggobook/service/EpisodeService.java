@@ -1,6 +1,5 @@
 package com.untitled.ggobook.service;
 
-import com.untitled.ggobook.controller.PointController;
 import com.untitled.ggobook.domain.*;
 import com.untitled.ggobook.domain.enums.Status;
 import com.untitled.ggobook.repository.*;
@@ -17,7 +16,6 @@ import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
 
-// 회차 서비스
 @Service
 @Slf4j
 @RequiredArgsConstructor
@@ -33,18 +31,38 @@ public class EpisodeService {
     private final ReadingRepository readingRepository;
     private final EpisodeLikeRepository episodeLikeRepository;
 
-    // 기존 에피소드 디테일 조회 - 관리자/비로그인용
+    // 1. 관리자/비로그인/내부 시스템용 (프리패스)
     @Transactional(readOnly = true)
     public Episode getEpisodeDetail(Long episodeId) {
         return episodeRepository.findByIdWithDetails(episodeId)
                 .orElseThrow(() -> new IllegalArgumentException("해당 회차를 찾을 수 없습니다."));
     }
 
+    // 🌟 2. 일반 독자용 (미리보기 유료 결제 검문소 완벽 적용)
     @Transactional
     public Episode getEpisodeDetail(Long episodeId, Long id) {
 
         Episode episode = episodeRepository.findByIdWithDetails(episodeId)
                 .orElseThrow(() -> new IllegalArgumentException("해당 회차를 찾을 수 없습니다."));
+
+        // [방어 1] 비공개, 검수대기, 반려, 블라인드 회차 접근 완벽 차단
+        if (episode.getStatus() != Status.APPROVED && episode.getStatus() != Status.PUBLISHED) {
+            throw new IllegalArgumentException("현재 비공개 처리된 회차입니다.");
+        }
+
+        // [방어 2] 🌟 APPROVED(유료 미리보기) 상태일 때 결제(소장) 여부 확인!
+        // (단, 작가가 애초에 1화처럼 '무료'로 설정해둔 회차면 결제 없이 통과)
+        if (episode.getStatus() == Status.APPROVED && !Boolean.TRUE.equals(episode.getIsFree())) {
+            if (id == null) {
+                throw new IllegalArgumentException("미리보기(유료) 회차는 로그인 후 구매해야 볼 수 있습니다.");
+            }
+            boolean isOwned = ownedContentRepository.existsByUserIdAndEpisode(id, episode);
+            if (!isOwned) {
+                throw new IllegalArgumentException("결제가 필요한 유료 회차입니다."); // 프론트에서 이 에러를 잡으면 결제창 띄우기
+            }
+        }
+
+        // 정상 접근이면 읽은 기록(Reading) 저장
         if(id != null) {
             Reading reading = readingRepository
                     .findByUserIdAndContent(id, episode.getContent())
@@ -56,12 +74,11 @@ public class EpisodeService {
             readingRepository.save(reading);
         }
 
-
         return episode;
     }
 
-    public Slice<Episode> getEpisodeList(Long contentId, Pageable pageable, String currentNeedStatus) {
-        return episodeRepository.findEpisodeListByContentId(contentId, pageable, currentNeedStatus);
+    public Slice<Episode> getEpisodeList(Long contentId, Pageable pageable) {
+        return episodeRepository.findEpisodeListByContentId(contentId, pageable);
     }
 
     @Transactional
@@ -200,11 +217,11 @@ public class EpisodeService {
             episode.decreaseLikeCount();
         }
     }
+
     @Transactional(readOnly = true)
     public boolean checkEpisodeLike(Long userId, Long episodeId) {
         Episode episode = episodeRepository.findById(episodeId)
                 .orElseThrow(() -> new IllegalArgumentException("회차 없음"));
-        // 내 이름이 방명록(EpisodeLike)에 있는지 확인해서 true/false 반환
         return episodeLikeRepository.findByUserIdAndEpisode(userId, episode).isPresent();
     }
 

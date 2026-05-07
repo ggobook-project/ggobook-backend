@@ -34,18 +34,18 @@ public interface UserRepository extends JpaRepository<User, Long> {
     // ※ 주의: User 엔티티의 role 타입에 따라 String 자리에 Role Enum을 써야 할 수도 있습니다.
     // ==========================================
 
-    // 0. 전체 목록 조회용 (관리자 제외)
-    Page<User> findByRoleNot(String role, Pageable pageable);
+    // 0. 전체 목록 조회용 (관리자 & 탈퇴자 제외)
+    Page<User> findByRoleNotAndStatusNot(String role, UserStatus status, Pageable pageable);
 
-    // 1. [아이디 + 닉네임] 전체 검색용 (JPQL을 사용하여 가독성 확보)
-    @Query("SELECT u FROM User u WHERE (u.userId LIKE %:keyword% OR u.nickname LIKE %:keyword%) AND u.role != :role")
-    Page<User> searchAllKeywordAndRoleNot(@Param("keyword") String keyword, @Param("role") String role, Pageable pageable);
+    // 1. [아이디 + 닉네임] 전체 검색용
+    @Query("SELECT u FROM User u WHERE (u.userId LIKE %:keyword% OR u.nickname LIKE %:keyword%) AND u.role != :role AND u.status != :status")
+    Page<User> searchAllKeywordAndRoleNotAndStatusNot(@Param("keyword") String keyword, @Param("role") String role, @Param("status") UserStatus status, Pageable pageable);
 
-    // 2. [아이디]로만 검색 (관리자 제외)
-    Page<User> findByUserIdContainingAndRoleNot(String userId, String role, Pageable pageable);
+    // 2. [아이디]로만 검색 (관리자 & 탈퇴자 제외)
+    Page<User> findByUserIdContainingAndRoleNotAndStatusNot(String userId, String role, UserStatus status, Pageable pageable);
 
-    // 3. [닉네임]으로만 검색 (관리자 제외)
-    Page<User> findByNicknameContainingAndRoleNot(String nickname, String role, Pageable pageable);
+    // 3. [닉네임]으로만 검색 (관리자 & 탈퇴자 제외)
+    Page<User> findByNicknameContainingAndRoleNotAndStatusNot(String nickname, String role, UserStatus status, Pageable pageable);
 
     long countByRole(String role);
 

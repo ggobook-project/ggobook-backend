@@ -21,6 +21,7 @@ public interface ContentRepository extends JpaRepository<Content, Long> {
             "AND (:genre IS NULL OR c.genre = :genre) " +
             "AND (:type IS NULL OR c.type = :type) " +
             "AND (:serialDay IS NULL OR c.serialDay = :serialDay) " +
+            "AND c.status IN (com.untitled.ggobook.domain.enums.Status.APPROVED, com.untitled.ggobook.domain.enums.Status.PUBLISHED) " +
             "ORDER BY c.createdAt DESC")
     Slice<Content> findContentList(@Param("keyword") String keyword,
                                    @Param("genre") String genre,
@@ -65,6 +66,7 @@ public interface ContentRepository extends JpaRepository<Content, Long> {
             "AND (:genre IS NULL OR c.genre = :genre)" +
             "AND (:type IS NULL OR c.type = :type)" +
             "AND (:serialDay IS NULL OR c.serialDay = :serialDay) " +
+            "AND c.status IN (com.untitled.ggobook.domain.enums.Status.APPROVED, com.untitled.ggobook.domain.enums.Status.PUBLISHED) " +
             "ORDER BY c.weeklyScore DESC, c.createdAt DESC")
     Slice<Content> findPopularContentList(@Param("keyword") String keyword,
                                           @Param("genre") String genre,

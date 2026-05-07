@@ -22,7 +22,7 @@ import java.util.List;
 @Service
 @Slf4j
 @RequiredArgsConstructor
-public class  ContentService {
+public class ContentService {
 
     private final ContentRepository contentRepository;
     private final EpisodeRepository episodeRepository;
@@ -39,7 +39,6 @@ public class  ContentService {
         String searchGenre = (genre == null || genre.isBlank()) ? null : genre;
         String searchDay = (serialDay == null || serialDay.isBlank()) ? null : serialDay;
 
-        // 🌟 핵심 수술: 프론트에서 "popular"라고 외치면 랭킹순 쿼리로 보내고, 아니면 기존 최신순 쿼리로 보냅니다!
         if ("popular".equals(sortType)) {
             return contentRepository.findPopularContentList(searchKeyword, searchGenre, type, searchDay, pageable);
         } else {
@@ -55,8 +54,7 @@ public class  ContentService {
 
         content.setViewCount(content.getViewCount() + 1);
 
-
-        Slice<Episode> episodes = episodeRepository.findEpisodeListByContentId(contentId, pageable, currentNeedStatus);
+        Slice<Episode> episodes = episodeRepository.findEpisodeListByContentId(contentId, pageable);
 
         boolean isLiked = false;
         if (userId != null) {
@@ -68,12 +66,23 @@ public class  ContentService {
             dto.setEpisodeId(ep.getEpisodeId());
             dto.setEpisodeNumber(ep.getEpisodeNumber());
             dto.setEpisodeTitle(ep.getEpisodeTitle());
-            dto.setIsFree(ep.getIsFree());
+
+            // 🌟 [수술 포인트 1] 유료/무료 구분: PUBLISHED(무료전환)이거나 애초에 무료인 회차는 true
+            boolean isActuallyFree = (ep.getStatus() == Status.PUBLISHED) || Boolean.TRUE.equals(ep.getIsFree());
+            dto.setIsFree(isActuallyFree);
+
             dto.setStatus(ep.getStatus().name());
             dto.setCreatedAt(ep.getCreatedAt());
             dto.setThumbnailUrl(ep.getThumbnailUrl());
-            dto.setIsRead(readingRepository.existsByUserIdAndEpisode_EpisodeId(userId, ep.getEpisodeId()));
-            dto.setIsOwned(false);
+            dto.setIsRead(userId != null && readingRepository.existsByUserIdAndEpisode_EpisodeId(userId, ep.getEpisodeId()));
+
+            // 🌟 [수술 포인트 2] 결제/소장 여부 판단: 프론트에서 이 값이 true면 자물쇠를 풉니다!
+            boolean isOwned = false;
+            if (userId != null) {
+                isOwned = ownedContentRepository.existsByUserIdAndEpisode(userId, ep);
+            }
+            dto.setIsOwned(isOwned);
+
             return dto;
         });
 
@@ -92,8 +101,6 @@ public class  ContentService {
                 content.getDescription(),
                 content.getSerialDay(),
                 content.getThumbnailUrl()
-
-
         );
     }
 
