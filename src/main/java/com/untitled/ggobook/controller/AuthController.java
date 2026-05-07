@@ -6,9 +6,9 @@ import com.untitled.ggobook.domain.User;
 import com.untitled.ggobook.service.AuthService;
 import com.untitled.ggobook.service.EmailService;
 import com.untitled.ggobook.util.JwtUtil;
-import jakarta.servlet.http.Cookie;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
+import org.springframework.http.ResponseCookie;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import jakarta.validation.Valid;
@@ -45,14 +45,12 @@ public class AuthController {
     // 🌟 2. 이메일 인증 API (회색 글씨 해결!)
     // ==========================================
 
-    // 이메일 발송 창구 (sendAuthEmail 뼈대 연결)
     @PostMapping("/email/send")
     public ResponseEntity<String> sendEmail(@RequestParam String email) {
         emailService.sendAuthEmail(email);
         return ResponseEntity.ok("이메일 발송 성공");
     }
 
-    // 이메일 인증번호 확인 창구 (verifyAuthCode 뼈대 연결)
     @PostMapping("/email/verify")
     public ResponseEntity<String> verifyEmail(@RequestParam String email, @RequestParam String code) {
         boolean isVerified = emailService.verifyAuthCode(email, code);
@@ -60,7 +58,6 @@ public class AuthController {
         if (isVerified) {
             return ResponseEntity.ok("인증 성공");
         } else {
-            // 번호가 틀렸거나 3분이 지나면 400 에러를 프론트로 던집니다.
             return ResponseEntity.badRequest().body("인증번호가 틀렸거나 만료되었습니다.");
         }
     }
@@ -84,8 +81,7 @@ public class AuthController {
         return ResponseEntity.ok("회원가입 성공!");
     }
 
-
-    // 🌟 5. 로그인 (AuthService의 Redis 로직 적용)
+    // 🌟 5. 로그인 (AuthService의 Redis 로직 적용 + ResponseCookie 적용)
     @PostMapping("/login")
     public ResponseEntity<String> login(@RequestBody LoginRequestDto request, HttpServletResponse response) {
         User user = authService.login(request.getUserId(), request.getPassword());
@@ -96,22 +92,18 @@ public class AuthController {
         // Redis에 Refresh Token 안전하게 보관!
         authService.saveRefreshToken(user.getId(), refreshToken);
 
-        Cookie cookie = new Cookie("refreshToken", refreshToken);
-        cookie.setHttpOnly(true); // 자바스크립트로 탈취 불가 (XSS 방어)
-        cookie.setPath("/");
+        // 🌟 핵심 수술 부위: 체크박스 상태에 따라 쿠키 수명 설정
+        long maxAgeSeconds = request.isKeepLoggedIn() ? (14 * 24 * 60 * 60) : -1;
 
-        // ==========================================
-        // 🌟 핵심 수술 부위: 체크박스 상태에 따라 쿠키 수명 분기 처리
-        // ==========================================
-        if (request.isKeepLoggedIn()) {
-            // 체크 O: 14일(1,209,600초) 동안 하드디스크에 살아남는 끈질긴 쿠키
-            cookie.setMaxAge(14 * 24 * 60 * 60);
-        } else {
-            // 체크 X: 브라우저 X 버튼 누르면 즉시 암살당하는 '세션 쿠키' (-1 설정)
-            cookie.setMaxAge(-1);
-        }
+        // 🌟 브라우저 차단 정책을 뚫는 안전한 쿠키 생성 (SameSite=Lax 적용)
+        ResponseCookie cookie = ResponseCookie.from("refreshToken", refreshToken)
+                .httpOnly(true)
+                .path("/")
+                .sameSite("Lax") // 크롬 등 최신 브라우저 보안 정책 대응
+                .maxAge(maxAgeSeconds)
+                .build();
 
-        response.addCookie(cookie);
+        response.addHeader("Set-Cookie", cookie.toString());
 
         return ResponseEntity.ok(accessToken);
     }
@@ -119,12 +111,10 @@ public class AuthController {
     // 🌟 5-1. 대기업 무한 로그인 비밀 API (Access Token 재발급)
     @PostMapping("/refresh")
     public ResponseEntity<String> refresh(@CookieValue(value = "refreshToken", required = false) String refreshToken) {
-        // 프론트엔드가 보낸 쿠키에 연장권이 없으면 입구컷!
         if (refreshToken == null) {
             return ResponseEntity.status(401).body("리프레시 토큰이 없습니다. 다시 로그인해주세요.");
         }
 
-        // AuthService를 통해 새 Access Token을 받아옵니다.
         String newAccessToken = authService.refreshAccessToken(refreshToken, jwtUtil);
         return ResponseEntity.ok(newAccessToken);
     }
@@ -135,17 +125,20 @@ public class AuthController {
             @CookieValue(value = "refreshToken", required = false) String refreshToken,
             HttpServletResponse response) {
 
-        // Redis에서 토큰을 지워버려 남은 연장권 무효화
         if (refreshToken != null && jwtUtil.validateToken(refreshToken)) {
             Long userId = jwtUtil.getIdFromToken(refreshToken);
             authService.deleteRefreshToken(userId);
         }
 
-        Cookie cookie = new Cookie("refreshToken", null);
-        cookie.setHttpOnly(true);
-        cookie.setPath("/");
-        cookie.setMaxAge(0);
-        response.addCookie(cookie);
+        // 🌟 로그아웃 시에도 ResponseCookie로 깔끔하게 파기
+        ResponseCookie cookie = ResponseCookie.from("refreshToken", "")
+                .httpOnly(true)
+                .path("/")
+                .sameSite("Lax")
+                .maxAge(0) // 즉시 삭제
+                .build();
+
+        response.addHeader("Set-Cookie", cookie.toString());
 
         return ResponseEntity.ok("로그아웃 성공!");
     }
@@ -157,7 +150,7 @@ public class AuthController {
         return ResponseEntity.ok(maskedId);
     }
 
-    // 8. 비밀번호 재설정 메일 발송 API (기존 비번 찾기 창에서 호출)
+    // 8. 비밀번호 재설정 메일 발송 API
     @PostMapping("/password/reset-link")
     public ResponseEntity<String> requestPasswordReset(
             @RequestParam String userId,
@@ -168,7 +161,7 @@ public class AuthController {
         return ResponseEntity.ok("가입된 이메일로 비밀번호 재설정 링크가 발송되었습니다.");
     }
 
-    // 9. 실제 비밀번호 변경 API (이메일 링크 타고 들어간 화면에서 호출)
+    // 9. 실제 비밀번호 변경 API
     @PostMapping("/password/reset")
     public ResponseEntity<String> resetPassword(
             @RequestParam String token,
@@ -177,12 +170,10 @@ public class AuthController {
         authService.resetPasswordWithToken(token, newPassword);
         return ResponseEntity.ok("비밀번호가 성공적으로 변경되었습니다.");
     }
-    //  추가: 에러 택배 상자 해체 전담 직원 (Clean Code 예외 처리)
+
+    // 예외 처리
     @ExceptionHandler(RuntimeException.class)
     public ResponseEntity<String> handleRuntimeException(RuntimeException e) {
-        // 백엔드 서비스(AuthService)에서 던진 에러 메시지만 쏙 뽑아서 순수 문자열(String)로 반환합니다.
         return ResponseEntity.badRequest().body(e.getMessage());
     }
-
-
 }

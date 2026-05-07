@@ -28,11 +28,10 @@ public class EpisodeController {
 
     @GetMapping("/contents/{contentId}/episodes")
     public Slice<Episode> getEpisodeList(
-            @RequestParam(required = false)Pageable pageable,
-            @PathVariable Long contentId,
-            String currentNeedStatus
-            ){
-        return episodeService.getEpisodeList(contentId, pageable, currentNeedStatus);
+            @RequestParam(required = false) Pageable pageable,
+            @PathVariable Long contentId
+    ){
+        return episodeService.getEpisodeList(contentId, pageable);
     }
 
     @GetMapping("/episodes/{episodeId}")
