@@ -49,6 +49,7 @@ public class SecurityConfig {
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
                         .requestMatchers("/", "/index.html", "/api/auth/**", "/api/contents/**", "/error").permitAll()
+                        .requestMatchers("/oauth2/**", "/login/**").permitAll()
                         // 🌟 프론트엔드 UI/API 연동 테스트를 위해 임시로 모든 접근 허용!
                         // (나중에 로그인 기능 완성 후 .hasRole("ADMIN")으로 다시 롤백 할 예정)
                         .requestMatchers(HttpMethod.GET, "/api/admin/relay-topics").permitAll()
@@ -77,7 +78,11 @@ public class SecurityConfig {
     @Bean
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration config = new CorsConfiguration();
-        config.setAllowedOrigins(List.of("http://localhost:5173"));
+        config.setAllowedOrigins(List.of(
+                "http://localhost:5173",
+                "http://15.164.216.109"
+        ));
+
         config.setAllowedMethods(List.of("GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"));
         config.setAllowedHeaders(List.of("*"));
         config.setAllowCredentials(true);
