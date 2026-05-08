@@ -100,7 +100,7 @@ public class ContentService {
                 tags,
                 content.getDescription(),
                 content.getSerialDay(),
-                content.getThumbnailUrl()
+                content.getVideoUrl()
         );
     }
 
@@ -120,16 +120,23 @@ public class ContentService {
     public void updateContent(Content content, MultipartFile multipartFile){
         Content existing = contentRepository.findById(content.getContentId())
                 .orElseThrow(() -> new IllegalArgumentException("해당 작품이 없습니다."));
+        existing.setStatus(Status.PENDING);
+        existing.setRejectReason(null);
 
-        content.setAuthor(existing.getAuthor());
+        existing.setTitle(content.getTitle());
+        existing.setType(content.getType());
+        existing.setGenre(content.getGenre());
+        existing.setSummary(content.getSummary());
+        existing.setDescription(content.getDescription());
+        existing.setSerialDay(content.getSerialDay());
+        existing.setVideoUrl(content.getVideoUrl());
 
         if (multipartFile != null && !multipartFile.isEmpty()) {
-            fileUtil.deleteFromS3(existing.getThumbnailUrl());
-            content.setThumbnailUrl(fileUtil.uploadToS3(multipartFile));
-        } else {
-            content.setThumbnailUrl(existing.getThumbnailUrl());
+            if (existing.getThumbnailUrl() != null) {
+                fileUtil.deleteFromS3(existing.getThumbnailUrl());
+            }
+            existing.setThumbnailUrl(fileUtil.uploadToS3(multipartFile));
         }
-        contentRepository.save(content);
     }
 
     @Transactional

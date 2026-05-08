@@ -19,6 +19,8 @@ public interface EpisodeRepository extends JpaRepository<Episode, Long> {
     // 1. [기본 노출용] 최신화부터 보기 (내림차순)
     List<Episode> findByContentOrderByEpisodeNumberDesc(Content content);
 
+    long countByStatus(Status status);
+
     // 2. [검수 기능 - 기존 유지] 특정 상태인 회차들 전체 조회 (혹시 모를 내부 로직용)
     List<Episode> findByStatus(Status status);
 
@@ -59,4 +61,11 @@ public interface EpisodeRepository extends JpaRepository<Episode, Long> {
     List<Episode> findByContent_ContentIdOrderByEpisodeNumberDesc(Long contentId);
 
     Optional<Episode> findTopByContent_ContentIdOrderByEpisodeNumberDesc(Long contentId);
+
+    @Query("SELECT e FROM Episode e " +
+            "WHERE e.content.contentId = :contentId " +
+            "ORDER BY e.episodeNumber DESC")
+    Slice<Episode> findAuthorEpisodeListByContentId(
+            @Param("contentId") Long contentId,
+            Pageable pageable);
 }

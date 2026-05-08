@@ -38,32 +38,26 @@ public class EpisodeService {
                 .orElseThrow(() -> new IllegalArgumentException("해당 회차를 찾을 수 없습니다."));
     }
 
-    // 🌟 2. 일반 독자용 (미리보기 유료 결제 검문소 완벽 적용)
     @Transactional
     public Episode getEpisodeDetail(Long episodeId, Long id) {
-
         Episode episode = episodeRepository.findByIdWithDetails(episodeId)
                 .orElseThrow(() -> new IllegalArgumentException("해당 회차를 찾을 수 없습니다."));
 
-        // [방어 1] 비공개, 검수대기, 반려, 블라인드 회차 접근 완벽 차단
-        if (episode.getStatus() != Status.APPROVED && episode.getStatus() != Status.PUBLISHED) {
+        boolean isAuthor = (id != null && episode.getContent().getAuthor().getId().equals(id));
+
+        if (!isAuthor && episode.getStatus() != Status.APPROVED && episode.getStatus() != Status.PUBLISHED) {
             throw new IllegalArgumentException("현재 비공개 처리된 회차입니다.");
         }
-
-        // [방어 2] 🌟 APPROVED(유료 미리보기) 상태일 때 결제(소장) 여부 확인!
-        // (단, 작가가 애초에 1화처럼 '무료'로 설정해둔 회차면 결제 없이 통과)
-        if (episode.getStatus() == Status.APPROVED && !Boolean.TRUE.equals(episode.getIsFree())) {
+        if (!isAuthor && episode.getStatus() == Status.APPROVED && !Boolean.TRUE.equals(episode.getIsFree())) {
             if (id == null) {
                 throw new IllegalArgumentException("미리보기(유료) 회차는 로그인 후 구매해야 볼 수 있습니다.");
             }
             boolean isOwned = ownedContentRepository.existsByUserIdAndEpisode(id, episode);
             if (!isOwned) {
-                throw new IllegalArgumentException("결제가 필요한 유료 회차입니다."); // 프론트에서 이 에러를 잡으면 결제창 띄우기
+                throw new IllegalArgumentException("결제가 필요한 유료 회차입니다.");
             }
         }
-
-        // 정상 접근이면 읽은 기록(Reading) 저장
-        if(id != null) {
+        if (!isAuthor && id != null) {
             Reading reading = readingRepository
                     .findByUserIdAndContent(id, episode.getContent())
                     .orElse(new Reading());
@@ -108,34 +102,71 @@ public class EpisodeService {
     }
 
     @Transactional
-    public void updateEpisode(Episode episode, Novel novel, MultipartFile thumbFile, List<MultipartFile> episodeFiles) {
+    public void updateEpisode(Episode episode, Novel novel, MultipartFile thumbFile, List<MultipartFile> episodeFiles, List<String> imageOrder) {
         Episode existing = episodeRepository.findById(episode.getEpisodeId())
                 .orElseThrow(() -> new IllegalArgumentException("회차 없음"));
 
+        // 🌟 핵심 1: 수정을 하면 무조건 '검수 대기(PENDING)'로 상태를 강등시킵니다!
+        existing.setStatus(Status.PENDING);
+        existing.setRejectReason(null); // 혹시 반려 상태였다면 반려 사유도 리셋!
+
+        if (episode.getEpisodeNumber() != null) existing.setEpisodeNumber(episode.getEpisodeNumber());
+        if (episode.getEpisodeTitle() != null) existing.setEpisodeTitle(episode.getEpisodeTitle());
+        if (episode.getIsFree() != null) existing.setIsFree(episode.getIsFree());
+        if (episode.getScheduledAt() != null) existing.setScheduledAt(episode.getScheduledAt());
+
         if (thumbFile != null && !thumbFile.isEmpty()) {
-            fileUtil.deleteFromS3(existing.getThumbnailUrl());
-            episode.setThumbnailUrl(fileUtil.uploadToS3(thumbFile));
+            if (existing.getThumbnailUrl() != null) fileUtil.deleteFromS3(existing.getThumbnailUrl());
+            existing.setThumbnailUrl(fileUtil.uploadToS3(thumbFile));
         }
 
-        Episode savedEpisode = episodeRepository.save(episode);
-
         if (novel != null) {
-            novel.setEpisodeId(savedEpisode.getEpisodeId());
-            novel.setEpisode(savedEpisode);
-            novelRepository.save(novel);
-        } else if (episodeFiles != null && !episodeFiles.isEmpty()) {
-            List<ComicToon> oldComicToons = comicToonRepository.findByEpisode(savedEpisode);
-            for (ComicToon old : oldComicToons) {
-                fileUtil.deleteFromS3(old.getImageUrl());
+            Novel existingNovel = existing.getNovel();
+            if (existingNovel != null) {
+                existingNovel.setContentText(novel.getContentText());
+                if (novel.getTtsFileUrl() != null) existingNovel.setTtsFileUrl(novel.getTtsFileUrl());
+            } else {
+                novel.setEpisode(existing);
+                novel.setEpisodeId(existing.getEpisodeId());
+                novelRepository.save(novel);
             }
-            comicToonRepository.deleteAll(oldComicToons);
+        }
+        // 🌟 핵심 2: 웹툰 이미지 순서 재조립 로직
+        else if (imageOrder != null && !imageOrder.isEmpty()) {
+            List<ComicToon> oldComicToons = comicToonRepository.findByEpisode(existing);
 
-            for (int i = 0; i < episodeFiles.size(); i++) {
-                ComicToon comicToon = new ComicToon();
-                comicToon.setEpisode(savedEpisode);
-                comicToon.setImageUrl(fileUtil.uploadToS3(episodeFiles.get(i)));
-                comicToon.setImageOrder(i + 1);
-                comicToonRepository.save(comicToon);
+            // 살려둘 기존 이미지 URL 목록 찾기
+            List<String> keepUrls = imageOrder.stream()
+                    .filter(url -> !url.equals("NEW_FILE")).toList();
+
+            // 버려지는 기존 이미지는 S3와 DB에서 삭제
+            for (ComicToon old : oldComicToons) {
+                if (!keepUrls.contains(old.getImageUrl())) {
+                    fileUtil.deleteFromS3(old.getImageUrl());
+                    comicToonRepository.delete(old);
+                }
+            }
+
+            // 새로운 순서대로 ComicToon 재생성 및 업데이트
+            int newFileIndex = 0;
+            for (int i = 0; i < imageOrder.size(); i++) {
+                String currentOrderVal = imageOrder.get(i);
+                if (currentOrderVal.equals("NEW_FILE")) {
+                    // 새 파일이면 업로드하고 객체 생성
+                    ComicToon comicToon = new ComicToon();
+                    comicToon.setEpisode(existing);
+                    comicToon.setImageUrl(fileUtil.uploadToS3(episodeFiles.get(newFileIndex++)));
+                    comicToon.setImageOrder(i + 1);
+                    comicToonRepository.save(comicToon);
+                } else {
+                    // 기존 이미지면 순서(imageOrder)만 갱신
+                    for (ComicToon old : oldComicToons) {
+                        if (old.getImageUrl().equals(currentOrderVal)) {
+                            old.setImageOrder(i + 1);
+                            break;
+                        }
+                    }
+                }
             }
         }
     }
@@ -231,5 +262,10 @@ public class EpisodeService {
                 .findTopByContent_ContentIdOrderByEpisodeNumberDesc(contentId)
                 .map(ep -> ep.getEpisodeNumber() + 1)
                 .orElse(1);
+    }
+
+    @Transactional(readOnly = true)
+    public Slice<Episode> getAuthorEpisodeList(Long contentId, Pageable pageable) {
+        return episodeRepository.findAuthorEpisodeListByContentId(contentId, pageable);
     }
 }

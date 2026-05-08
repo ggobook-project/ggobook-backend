@@ -66,9 +66,11 @@ public class EpisodeController {
             @RequestPart("episode") Episode episode,
             @RequestPart(value = "novel", required = false) Novel novel,
             @RequestPart(value = "thumbFile", required = false) MultipartFile thumbFile,
-            @RequestPart(value = "episodeFiles", required = false) List<MultipartFile> episodeFiles) {
+            @RequestPart(value = "episodeFiles", required = false) List<MultipartFile> episodeFiles,
+            @RequestParam(value = "imageOrder", required = false) List<String> imageOrder) {
         episode.setEpisodeId(episodeId);
-        episodeService.updateEpisode(episode, novel, thumbFile, episodeFiles);
+        // 서비스에도 imageOrder를 넘겨줍니다.
+        episodeService.updateEpisode(episode, novel, thumbFile, episodeFiles, imageOrder);
     }
 
     @DeleteMapping("/episodes/{episodeId}")
@@ -105,5 +107,13 @@ public class EpisodeController {
     @GetMapping("/contents/{contentId}/episodes/next-number")
     public ResponseEntity<Integer> getNextEpisodeNumber(@PathVariable Long contentId) {
         return ResponseEntity.ok(episodeService.getNextEpisodeNumber(contentId));
+    }
+
+    @GetMapping("/author/contents/{contentId}/episodes")
+    public Slice<Episode> getAuthorEpisodeList(
+            @RequestParam(required = false) Pageable pageable,
+            @PathVariable Long contentId
+    ){
+        return episodeService.getAuthorEpisodeList(contentId, pageable);
     }
 }

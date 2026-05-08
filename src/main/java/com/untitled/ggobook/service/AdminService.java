@@ -15,13 +15,16 @@ import java.time.LocalDateTime;
 public class AdminService {
 
     private final ContentRepository contentRepository;
+    private final EpisodeRepository episodeRepository; // 🌟 핵심 수술 1: 회차 창고(Repository) 접근 권한 추가!
     private final UserRepository userRepository;
     private final ReportRepository reportRepository;
 
     @Transactional(readOnly = true)
     public AdminDashboardDTO getDashboardData() {
-        // 1. 검수 대기 (Status.PENDING)
-        long inspectionCount = contentRepository.countByStatus(Status.PENDING);
+        // 🌟 핵심 수술 2: 작품 대기 개수와 회차 대기 개수를 각각 가져와서 합칩니다!
+        long contentPendingCount = contentRepository.countByStatus(Status.PENDING);
+        long episodePendingCount = episodeRepository.countByStatus(Status.PENDING);
+        long totalInspectionCount = contentPendingCount + episodePendingCount; // 총합 계산
 
         // 2. 신고 접수 (처리되지 않은 신고 예시)
         long reportCount = reportRepository.countByStatus(ReportStatus.PENDING);
@@ -34,11 +37,11 @@ public class AdminService {
         long todayJoinCount = userRepository.countByCreatedAtAfter(startOfToday);
 
         return AdminDashboardDTO.builder()
-                .pendingInspectionCount(inspectionCount)
+                .pendingInspectionCount(totalInspectionCount) // 🌟 합산된 전체 대기 개수 전달
                 .reportCount(reportCount)
                 .totalUserCount(totalUserCount)
                 .todayJoinCount(todayJoinCount)
-                .inspectionBadge((int) inspectionCount)
+                .inspectionBadge((int) totalInspectionCount) // 🌟 메뉴 뱃지도 통합 개수로 띄움!
                 .reportBadge((int) reportCount)
                 .build();
     }

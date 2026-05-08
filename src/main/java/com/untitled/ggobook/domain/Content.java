@@ -34,6 +34,8 @@ public class Content {
     private String genre;
     private String serialDay;
 
+    private String videoUrl;
+
     @Enumerated(EnumType.STRING)
     private Status status = Status.DRAFT;
 
