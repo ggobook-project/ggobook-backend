@@ -13,8 +13,8 @@ import java.util.Map;
 @Component
 public class AIRequestUtil {
 
-    private final String CONTENT_SUMMARY_URL = "http://localhost:8000/api/inspect/summary";
-    private final String RELAY_SUMMARY_URL = "http://localhost:8000/api/relay/summarize";
+    private final String CONTENT_SUMMARY_URL = "http://llm:8000/api/inspect/summary";
+    private final String RELAY_SUMMARY_URL = "http://llm:8000/api/relay/summarize";
 
     private final RestTemplate restTemplate;
 
