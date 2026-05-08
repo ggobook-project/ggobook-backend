@@ -17,6 +17,7 @@ import org.springframework.data.domain.Slice;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
+import java.time.LocalDateTime;
 import java.util.List;
 
 @Service
@@ -67,22 +68,35 @@ public class ContentService {
             dto.setEpisodeNumber(ep.getEpisodeNumber());
             dto.setEpisodeTitle(ep.getEpisodeTitle());
 
-            // 🌟 [수술 포인트 1] 유료/무료 구분: PUBLISHED(무료전환)이거나 애초에 무료인 회차는 true
-            boolean isActuallyFree = (ep.getStatus() == Status.PUBLISHED) || Boolean.TRUE.equals(ep.getIsFree());
-            dto.setIsFree(isActuallyFree);
+            // ==========================================
+            // 🌟 미리보기 vs 영구유료 완벽 분기 처리
+            // ==========================================
+            LocalDateTime now = LocalDateTime.now();
+            boolean isTimePassed = ep.getScheduledAt() == null || !ep.getScheduledAt().isAfter(now);
 
-            dto.setStatus(ep.getStatus().name());
-            dto.setCreatedAt(ep.getCreatedAt());
+            if (Boolean.TRUE.equals(ep.getIsFree())) {
+                // 1. 작가가 '무료'로 올렸을 때
+                if (!isTimePassed) {
+                    dto.setIsFree(false);
+                    dto.setStatus("PREVIEW"); // 🌟 시간이 안 지났으면 프론트에 '미리보기'라고 명시해 줌
+                } else {
+                    dto.setIsFree(true);
+                    dto.setStatus("PUBLISHED"); // 시간이 지나면 완전 무료로 전환
+                }
+            } else {
+                // 2. 작가가 처음부터 '유료'로 올렸을 때
+                dto.setIsFree(false);
+                dto.setStatus(ep.getStatus().name()); // APPROVED든 PUBLISHED든 원래 상태 유지 (영구 유료)
+            }
+            // ==========================================
+
+            dto.setCreatedAt(ep.getScheduledAt() != null ? ep.getScheduledAt() : ep.getCreatedAt());
             dto.setThumbnailUrl(ep.getThumbnailUrl());
             dto.setIsRead(userId != null && readingRepository.existsByUserIdAndEpisode_EpisodeId(userId, ep.getEpisodeId()));
 
-            // 🌟 [수술 포인트 2] 결제/소장 여부 판단: 프론트에서 이 값이 true면 자물쇠를 풉니다!
             boolean isOwned = false;
-            if (userId != null) {
-                isOwned = ownedContentRepository.existsByUserIdAndEpisode(userId, ep);
-            }
+            if (userId != null) isOwned = ownedContentRepository.existsByUserIdAndEpisode(userId, ep);
             dto.setIsOwned(isOwned);
-
             return dto;
         });
 
@@ -100,7 +114,8 @@ public class ContentService {
                 tags,
                 content.getDescription(),
                 content.getSerialDay(),
-                content.getVideoUrl()
+                content.getVideoUrl(),
+                content.getAuthor() != null ? content.getAuthor().getNickname() : "미상"
         );
     }
 
@@ -120,23 +135,25 @@ public class ContentService {
     public void updateContent(Content content, MultipartFile multipartFile){
         Content existing = contentRepository.findById(content.getContentId())
                 .orElseThrow(() -> new IllegalArgumentException("해당 작품이 없습니다."));
-        existing.setStatus(Status.PENDING);
-        existing.setRejectReason(null);
 
-        existing.setTitle(content.getTitle());
-        existing.setType(content.getType());
-        existing.setGenre(content.getGenre());
-        existing.setSummary(content.getSummary());
-        existing.setDescription(content.getDescription());
-        existing.setSerialDay(content.getSerialDay());
-        existing.setVideoUrl(content.getVideoUrl());
+        // 🌟 완벽한 객체지향 방식: 외부에서 new 하지 않고 엔티티에 복제본 생성을 요청합니다.
+        Content draft = Content.createDraft(existing);
+
+        // 변경된 필드만 덮어쓰거나 기존 값 유지
+        draft.setTitle(content.getTitle() != null ? content.getTitle() : existing.getTitle());
+        draft.setType(content.getType() != null ? content.getType() : existing.getType());
+        draft.setGenre(content.getGenre() != null ? content.getGenre() : existing.getGenre());
+        draft.setSummary(content.getSummary() != null ? content.getSummary() : existing.getSummary());
+        draft.setDescription(content.getDescription() != null ? content.getDescription() : existing.getDescription());
+        draft.setSerialDay(content.getSerialDay() != null ? content.getSerialDay() : existing.getSerialDay());
+        draft.setVideoUrl(content.getVideoUrl() != null ? content.getVideoUrl() : existing.getVideoUrl());
 
         if (multipartFile != null && !multipartFile.isEmpty()) {
-            if (existing.getThumbnailUrl() != null) {
-                fileUtil.deleteFromS3(existing.getThumbnailUrl());
-            }
-            existing.setThumbnailUrl(fileUtil.uploadToS3(multipartFile));
+            draft.setThumbnailUrl(fileUtil.uploadToS3(multipartFile));
+        } else {
+            draft.setThumbnailUrl(existing.getThumbnailUrl()); // 사진 안 바꿨으면 원본 사진 유지
         }
+        contentRepository.save(draft);
     }
 
     @Transactional

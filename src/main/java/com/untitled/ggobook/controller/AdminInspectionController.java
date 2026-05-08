@@ -2,6 +2,8 @@ package com.untitled.ggobook.controller;
 
 import com.untitled.ggobook.domain.Episode;
 import com.untitled.ggobook.dto.AdminEpisodeDetailDto;
+import com.untitled.ggobook.dto.ContentBasicDTO;
+import com.untitled.ggobook.dto.EpisodeDTO;
 import com.untitled.ggobook.service.AdminInspectionService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
@@ -24,17 +26,21 @@ public class AdminInspectionController {
         return ResponseEntity.ok(adminService.getApprovedList());
     }
 
-    // 🌟 수술 1: 작품(Content)과 회차(Episode)를 묶어서 통합 검수 목록으로 반환!
-    @GetMapping
-    public ResponseEntity<List<Map<String, Object>>> getInspectionList() {
-        return ResponseEntity.ok(adminService.getInspectionMergedList());
+    // 🌟 수정: Map을 버리고 기존 ContentBasicDTO 재활용 (작품 검수 대기 목록)
+    @GetMapping("/contents/pending")
+    public ResponseEntity<List<ContentBasicDTO>> getPendingContents() {
+        return ResponseEntity.ok(adminService.getPendingContents());
     }
 
-    // ==========================================
-    //  [신설] 작품(Content) 전용 검수 API
-    // ==========================================
+    // 🌟 수정: Map을 버리고 기존 EpisodeDTO 재활용 (회차 검수 대기 목록)
+    @GetMapping("/episodes/pending")
+    public ResponseEntity<List<EpisodeDTO>> getPendingEpisodes() {
+        return ResponseEntity.ok(adminService.getPendingEpisodes());
+    }
+
+    // 🌟 수정: 작품 상세 조회도 Map을 버리고 ContentBasicDTO 재활용
     @GetMapping("/contents/{contentId}")
-    public ResponseEntity<Map<String, Object>> getContentDetail(@PathVariable Long contentId) {
+    public ResponseEntity<ContentBasicDTO> getContentDetail(@PathVariable Long contentId) {
         return ResponseEntity.ok(adminService.getContentInspectionDetail(contentId));
     }
 

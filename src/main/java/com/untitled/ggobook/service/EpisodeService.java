@@ -31,7 +31,6 @@ public class EpisodeService {
     private final ReadingRepository readingRepository;
     private final EpisodeLikeRepository episodeLikeRepository;
 
-    // 1. 관리자/비로그인/내부 시스템용 (프리패스)
     @Transactional(readOnly = true)
     public Episode getEpisodeDetail(Long episodeId) {
         return episodeRepository.findByIdWithDetails(episodeId)
@@ -43,11 +42,18 @@ public class EpisodeService {
         Episode episode = episodeRepository.findByIdWithDetails(episodeId)
                 .orElseThrow(() -> new IllegalArgumentException("해당 회차를 찾을 수 없습니다."));
 
-        boolean isAuthor = (id != null && episode.getContent().getAuthor().getId().equals(id));
+        // 🌟 핵심 수술: 옛날 데이터에 작가(Author)나 작품(Content) 정보가 비어있어도 서버가 터지지 않도록 방어막(Null 체크) 추가!
+        boolean isAuthor = false;
+        if (id != null && episode.getContent() != null && episode.getContent().getAuthor() != null) {
+            isAuthor = episode.getContent().getAuthor().getId().equals(id);
+        }
 
+        // 작가가 아닌데 비공개(임시저장/반려) 상태면 차단
         if (!isAuthor && episode.getStatus() != Status.APPROVED && episode.getStatus() != Status.PUBLISHED) {
             throw new IllegalArgumentException("현재 비공개 처리된 회차입니다.");
         }
+
+        // 미리보기 결제 체크 로직
         if (!isAuthor && episode.getStatus() == Status.APPROVED && !Boolean.TRUE.equals(episode.getIsFree())) {
             if (id == null) {
                 throw new IllegalArgumentException("미리보기(유료) 회차는 로그인 후 구매해야 볼 수 있습니다.");
@@ -57,7 +63,9 @@ public class EpisodeService {
                 throw new IllegalArgumentException("결제가 필요한 유료 회차입니다.");
             }
         }
-        if (!isAuthor && id != null) {
+
+        // 최근 읽은 위치 저장 (옛날 데이터에 content가 없으면 저장 패스)
+        if (!isAuthor && id != null && episode.getContent() != null) {
             Reading reading = readingRepository
                     .findByUserIdAndContent(id, episode.getContent())
                     .orElse(new Reading());
@@ -106,67 +114,43 @@ public class EpisodeService {
         Episode existing = episodeRepository.findById(episode.getEpisodeId())
                 .orElseThrow(() -> new IllegalArgumentException("회차 없음"));
 
-        // 🌟 핵심 1: 수정을 하면 무조건 '검수 대기(PENDING)'로 상태를 강등시킵니다!
-        existing.setStatus(Status.PENDING);
-        existing.setRejectReason(null); // 혹시 반려 상태였다면 반려 사유도 리셋!
+        // 🌟 완벽한 객체지향 방식: 외부에서 new 하지 않고 안전하게 복제본(Draft) 생성
+        Episode draft = Episode.createDraft(existing);
 
-        if (episode.getEpisodeNumber() != null) existing.setEpisodeNumber(episode.getEpisodeNumber());
-        if (episode.getEpisodeTitle() != null) existing.setEpisodeTitle(episode.getEpisodeTitle());
-        if (episode.getIsFree() != null) existing.setIsFree(episode.getIsFree());
-        if (episode.getScheduledAt() != null) existing.setScheduledAt(episode.getScheduledAt());
+        draft.setEpisodeNumber(episode.getEpisodeNumber() != null ? episode.getEpisodeNumber() : existing.getEpisodeNumber());
+        draft.setEpisodeTitle(episode.getEpisodeTitle() != null ? episode.getEpisodeTitle() : existing.getEpisodeTitle());
+        draft.setIsFree(episode.getIsFree() != null ? episode.getIsFree() : existing.getIsFree());
+        draft.setScheduledAt(episode.getScheduledAt() != null ? episode.getScheduledAt() : existing.getScheduledAt());
 
         if (thumbFile != null && !thumbFile.isEmpty()) {
-            if (existing.getThumbnailUrl() != null) fileUtil.deleteFromS3(existing.getThumbnailUrl());
-            existing.setThumbnailUrl(fileUtil.uploadToS3(thumbFile));
+            draft.setThumbnailUrl(fileUtil.uploadToS3(thumbFile));
+        } else {
+            draft.setThumbnailUrl(existing.getThumbnailUrl());
         }
 
+        Episode savedDraft = episodeRepository.save(draft);
+
+        // 🌟 수정됨: 원본 데이터(Novel, ComicToon)는 절대 삭제하지 않습니다! 복제본에 새로 맵핑합니다.
         if (novel != null) {
-            Novel existingNovel = existing.getNovel();
-            if (existingNovel != null) {
-                existingNovel.setContentText(novel.getContentText());
-                if (novel.getTtsFileUrl() != null) existingNovel.setTtsFileUrl(novel.getTtsFileUrl());
-            } else {
-                novel.setEpisode(existing);
-                novel.setEpisodeId(existing.getEpisodeId());
-                novelRepository.save(novel);
-            }
+            // 🌟 억지로 ID를 지우지 않고, 원본 내용만 쏙 빼서 안전하게 새 복제본을 만듭니다.
+            Novel draftNovel = Novel.createDraft(novel, savedDraft);
+            novelRepository.save(draftNovel);
         }
-        // 🌟 핵심 2: 웹툰 이미지 순서 재조립 로직
         else if (imageOrder != null && !imageOrder.isEmpty()) {
-            List<ComicToon> oldComicToons = comicToonRepository.findByEpisode(existing);
-
-            // 살려둘 기존 이미지 URL 목록 찾기
-            List<String> keepUrls = imageOrder.stream()
-                    .filter(url -> !url.equals("NEW_FILE")).toList();
-
-            // 버려지는 기존 이미지는 S3와 DB에서 삭제
-            for (ComicToon old : oldComicToons) {
-                if (!keepUrls.contains(old.getImageUrl())) {
-                    fileUtil.deleteFromS3(old.getImageUrl());
-                    comicToonRepository.delete(old);
-                }
-            }
-
-            // 새로운 순서대로 ComicToon 재생성 및 업데이트
             int newFileIndex = 0;
             for (int i = 0; i < imageOrder.size(); i++) {
                 String currentOrderVal = imageOrder.get(i);
+
+                ComicToon comicToon = new ComicToon();
+                comicToon.setEpisode(savedDraft); // 복제본에 연결
+                comicToon.setImageOrder(i + 1);
+
                 if (currentOrderVal.equals("NEW_FILE")) {
-                    // 새 파일이면 업로드하고 객체 생성
-                    ComicToon comicToon = new ComicToon();
-                    comicToon.setEpisode(existing);
                     comicToon.setImageUrl(fileUtil.uploadToS3(episodeFiles.get(newFileIndex++)));
-                    comicToon.setImageOrder(i + 1);
-                    comicToonRepository.save(comicToon);
                 } else {
-                    // 기존 이미지면 순서(imageOrder)만 갱신
-                    for (ComicToon old : oldComicToons) {
-                        if (old.getImageUrl().equals(currentOrderVal)) {
-                            old.setImageOrder(i + 1);
-                            break;
-                        }
-                    }
+                    comicToon.setImageUrl(currentOrderVal); // 기존 이미지 URL 재사용
                 }
+                comicToonRepository.save(comicToon);
             }
         }
     }
@@ -195,20 +179,16 @@ public class EpisodeService {
 
     @Transactional
     public void purchaseEpisode(Long id, Long episodeId) {
-
         User user = userRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("유저가 존재하지 않습니다."));
-
         Wallet wallet = walletRepository.findByUserId(id)
                 .orElseThrow(() -> new RuntimeException("Wallet이 존재하지 않습니다."));
-
         Episode episode = episodeRepository.findById(episodeId)
                 .orElseThrow(() -> new RuntimeException("회차가 존재하지 않습니다."));
 
         if (ownedContentRepository.existsByUserIdAndEpisode(id, episode)) {
             throw new RuntimeException("이미 구매한 회차입니다.");
         }
-
 
         int EPISODE_PRICE = 200;
         if (wallet.getBalance() < EPISODE_PRICE) {

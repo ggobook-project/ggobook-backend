@@ -22,4 +22,16 @@ public class Novel {
     private String contentText;
 
     private String ttsFileUrl;
+
+    public static Novel createDraft(Novel existing, Episode draftEpisode) {
+        Novel draft = new Novel(); // 클래스 내부이므로 안전하게 생성 가능!
+        draft.setContentText(existing.getContentText());
+
+        if (existing.getTtsFileUrl() != null) {
+            draft.setTtsFileUrl(existing.getTtsFileUrl());
+        }
+
+        draft.setEpisode(draftEpisode);
+        return draft;
+    }
 }

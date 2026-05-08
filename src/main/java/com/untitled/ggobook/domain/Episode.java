@@ -40,6 +40,8 @@ public class Episode {
 
     private Long viewCount = 0L;
 
+    private Long originalId;
+
     // 🌟 추가: 회차 좋아요 캐싱 컬럼
     @Column(nullable = false)
     private Long likeCount = 0L;
@@ -90,4 +92,13 @@ public class Episode {
     @OneToMany(mappedBy = "episode", cascade = CascadeType.ALL)
     @JsonIgnore
     private List<Rating> ratings = new ArrayList<>();
+
+    public static Episode createDraft(Episode existing) {
+        Episode draft = new Episode();
+        draft.setOriginalId(existing.getEpisodeId());
+        draft.setContent(existing.getContent());
+        draft.setStatus(Status.PENDING);
+        return draft;
+    }
 }
+

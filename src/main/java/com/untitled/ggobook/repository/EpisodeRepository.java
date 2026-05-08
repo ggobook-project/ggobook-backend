@@ -42,6 +42,7 @@ public interface EpisodeRepository extends JpaRepository<Episode, Long> {
     // 5. 작품별 회차 슬라이스 조회
     @Query("SELECT e FROM Episode e " +
             "WHERE e.content.contentId = :contentId " +
+            "AND e.originalId IS NULL " +
             "AND e.status IN (com.untitled.ggobook.domain.enums.Status.APPROVED, " +
             "                 com.untitled.ggobook.domain.enums.Status.PUBLISHED, " +
             "                 com.untitled.ggobook.domain.enums.Status.BLINDED) " +

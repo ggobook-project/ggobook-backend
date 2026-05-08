@@ -28,4 +28,5 @@ public class ContentDetailDto {
     private String serialDay;
     private String videoUrl;
 
+    private String authorNickname;
 }

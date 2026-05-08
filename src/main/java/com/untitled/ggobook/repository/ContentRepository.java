@@ -15,15 +15,14 @@ import java.util.Optional;
 
 public interface ContentRepository extends JpaRepository<Content, Long> {
 
-    @Query("SELECT DISTINCT c FROM Content c " +
-            "LEFT JOIN c.tags t " +
+    @Query("SELECT DISTINCT c FROM Content c LEFT JOIN c.tags t " +
             "WHERE (:keyword IS NULL OR c.title LIKE %:keyword% OR t.tagName LIKE %:keyword%) " +
             "AND (:genre IS NULL OR c.genre = :genre) " +
             "AND (:type IS NULL OR c.type = :type) " +
             "AND (:serialDay IS NULL OR c.serialDay = :serialDay) " +
             "AND c.status IN (com.untitled.ggobook.domain.enums.Status.APPROVED, com.untitled.ggobook.domain.enums.Status.PUBLISHED) " +
-            // 🌟 핵심: 이 작품에 딸린 회차 중 APPROVED나 PUBLISHED 상태인 회차가 존재하는 것만 가져옵니다!
-            "AND EXISTS (SELECT 1 FROM Episode e WHERE e.content = c AND e.status IN (com.untitled.ggobook.domain.enums.Status.APPROVED, com.untitled.ggobook.domain.enums.Status.PUBLISHED)) " +
+            "AND c.originalId IS NULL " +
+            "AND EXISTS (SELECT 1 FROM Episode e WHERE e.content = c AND e.originalId IS NULL AND e.status IN (com.untitled.ggobook.domain.enums.Status.APPROVED, com.untitled.ggobook.domain.enums.Status.PUBLISHED)) " +
             "ORDER BY c.createdAt DESC")
     Slice<Content> findContentList(@Param("keyword") String keyword,
                                    @Param("genre") String genre,
@@ -65,12 +64,12 @@ public interface ContentRepository extends JpaRepository<Content, Long> {
 
     @Query("SELECT c FROM Content c " +
             "WHERE (:keyword IS NULL OR c.title LIKE %:keyword%) " +
-            "AND (:genre IS NULL OR c.genre = :genre)" +
-            "AND (:type IS NULL OR c.type = :type)" +
+            "AND (:genre IS NULL OR c.genre = :genre) " +
+            "AND (:type IS NULL OR c.type = :type) " +
             "AND (:serialDay IS NULL OR c.serialDay = :serialDay) " +
             "AND c.status IN (com.untitled.ggobook.domain.enums.Status.APPROVED, com.untitled.ggobook.domain.enums.Status.PUBLISHED) " +
-            // 🌟 핵심: 여기도 동일하게 빈 껍데기 차단 필터 적용!
-            "AND EXISTS (SELECT 1 FROM Episode e WHERE e.content = c AND e.status IN (com.untitled.ggobook.domain.enums.Status.APPROVED, com.untitled.ggobook.domain.enums.Status.PUBLISHED)) " +
+            "AND c.originalId IS NULL " +
+            "AND EXISTS (SELECT 1 FROM Episode e WHERE e.content = c AND e.originalId IS NULL AND e.status IN (com.untitled.ggobook.domain.enums.Status.APPROVED, com.untitled.ggobook.domain.enums.Status.PUBLISHED)) " +
             "ORDER BY c.weeklyScore DESC, c.createdAt DESC")
     Slice<Content> findPopularContentList(@Param("keyword") String keyword,
                                           @Param("genre") String genre,
