@@ -92,4 +92,15 @@ public class AdminContentService {
         }
         return dto;
     }
+
+    @Transactional
+    public void blindEntireContent(Long contentId) {
+        Content content = contentRepository.findById(contentId)
+                .orElseThrow(() -> new IllegalArgumentException("작품을 찾을 수 없습니다."));
+        content.setStatus(Status.BLINDED);
+        // 딸려있는 회차도 전부 블라인드 처리
+        for (Episode episode : content.getEpisodes()) {
+            episode.setStatus(Status.BLINDED);
+        }
+    }
 }

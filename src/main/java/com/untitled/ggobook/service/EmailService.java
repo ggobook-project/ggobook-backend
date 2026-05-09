@@ -1,5 +1,6 @@
 package com.untitled.ggobook.service;
 
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.mail.SimpleMailMessage;
 import org.springframework.mail.javamail.JavaMailSender;
@@ -10,6 +11,10 @@ import java.time.Duration;
 
 @Service
 public class EmailService {
+
+    @Value("${app.base-url}")
+    private String baseUrl;
+
 
     private final JavaMailSender javaMailSender;
     private final StringRedisTemplate redisTemplate;
@@ -51,8 +56,7 @@ public class EmailService {
         message.setTo(email);
         message.setSubject("[GGoBook] 비밀번호 재설정 안내");
 
-        // 프론트엔드 라우팅 주소 (팀 프로젝트 시 도메인으로 변경)
-        String resetUrl = "http://localhost:5173/reset-password?token=" + resetToken;
+        String resetUrl = baseUrl + "/reset-password?token=" + resetToken;
 
         message.setText("비밀번호를 재설정하려면 아래 링크를 클릭해 주세요.\n\n"
                 + resetUrl + "\n\n"

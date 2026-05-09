@@ -53,15 +53,6 @@ public class TtsService {
         Segment(String text, int speakerIndex) { this.text = text; this.speakerIndex = speakerIndex; }
     }
 
-//    @Value("${naver.tts.api-key-id:}")
-//    private String naverApiKeyId;
-//
-//    @Value("${naver.tts.api-key:}")
-//    private String naverApiKey;
-//
-//    @Value("${elevenlabs.api-key:}")
-//    private String elevenLabsApiKey;
-
     @Value("${typecast.api-key:}")
     private String typecastApiKey;
 

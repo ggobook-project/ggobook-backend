@@ -12,7 +12,7 @@ import java.util.List;
 @Entity
 @Getter
 @Setter
-@NoArgsConstructor(access = AccessLevel.PROTECTED) // 🌟 안전한 객체 생성
+@NoArgsConstructor(access = AccessLevel.PROTECTED)
 public class Content {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -33,6 +33,10 @@ public class Content {
     private String thumbnailUrl;
     private String genre;
     private String serialDay;
+
+    private String videoUrl;
+
+    private Long originalId;
 
     @Enumerated(EnumType.STRING)
     private Status status = Status.DRAFT;
@@ -64,5 +68,13 @@ public class Content {
     public void reject(String reason) {
         this.status = Status.REJECTED;
         this.rejectReason = reason;
+    }
+
+    public static Content createDraft(Content existing) {
+        Content draft = new Content();
+        draft.setOriginalId(existing.getContentId());
+        draft.setAuthor(existing.getAuthor());
+        draft.setStatus(Status.PENDING);
+        return draft;
     }
 }

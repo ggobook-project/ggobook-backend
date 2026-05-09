@@ -17,8 +17,11 @@ public class EpisodeDTO {
     private String status;       // 현재 상태 (PUBLISHED, BLINDED 등)
     private LocalDateTime createdAt; // 작성일
 
+    private String authorNickname;
+    private String thumbnailUrl;
+
     public EpisodeDTO() {
-        this.imageUrls = new ArrayList<>(); // 🌟 null 방지를 위해 빈 리스트로 초기화
+        this.imageUrls = new ArrayList<>();
     }
 
     public EpisodeDTO(Episode episode) {
@@ -27,5 +30,12 @@ public class EpisodeDTO {
         this.title = episode.getEpisodeTitle();
         this.status = episode.getStatus().name();
         this.createdAt = episode.getCreatedAt();
+
+        if (episode.getContent() != null && episode.getContent().getAuthor() != null) {
+            this.authorNickname = episode.getContent().getAuthor().getNickname();
+        } else {
+            this.authorNickname = "미상";
+        }
+        this.thumbnailUrl = episode.getThumbnailUrl();
     }
 }

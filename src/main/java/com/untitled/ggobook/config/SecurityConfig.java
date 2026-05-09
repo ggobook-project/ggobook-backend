@@ -1,5 +1,6 @@
 package com.untitled.ggobook.config;
 
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.oauth2.core.endpoint.OAuth2AuthorizationRequest;
 import jakarta.servlet.http.HttpServletRequest;
 import java.util.HashMap;
@@ -30,6 +31,9 @@ import java.util.List;
 @RequiredArgsConstructor
 
 public class SecurityConfig {
+
+    @Value("${app.allowed-origins}")
+    private String allowedOrigins;
 
     private final JwtAuthenticationFilter jwtAuthenticationFilter;
     private final SocialLoginService socialLoginService;
@@ -78,10 +82,7 @@ public class SecurityConfig {
     @Bean
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration config = new CorsConfiguration();
-        config.setAllowedOrigins(List.of(
-                "http://localhost:5173",
-                "https://ggo-book.com"
-        ));
+        config.setAllowedOrigins(List.of(allowedOrigins.split(",")));
         config.setAllowedMethods(List.of("GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"));
         config.setAllowedHeaders(List.of("*"));
         config.setAllowCredentials(true);

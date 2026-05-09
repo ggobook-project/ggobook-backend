@@ -4,124 +4,177 @@ import com.untitled.ggobook.domain.Content;
 import com.untitled.ggobook.domain.Episode;
 import com.untitled.ggobook.domain.Notification;
 import com.untitled.ggobook.domain.enums.Status;
+import com.untitled.ggobook.dto.ContentBasicDTO;
+import com.untitled.ggobook.dto.EpisodeDTO;
 import com.untitled.ggobook.repository.ContentRepository;
 import com.untitled.ggobook.repository.EpisodeRepository;
 import com.untitled.ggobook.util.AIRequestUtil;
 import lombok.RequiredArgsConstructor;
-import org.springframework.data.domain.Page;
-import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
 public class AdminInspectionService {
 
     private final EpisodeRepository episodeRepository;
+    private final ContentRepository contentRepository;
     private final AIRequestUtil aiRequestUtil;
     private final NotificationService notificationService;
 
+    // ==========================================
+    //  🌟 수정 1: Map 통합 리스트 폐기 -> 기존 DTO 분리 반환
+    // ==========================================
     @Transactional(readOnly = true)
-    public Page<Episode> getInspectionList(Pageable pageable) {
-        // PENDING 상태인 회차들만 페이징 처리하여 가져옵니다. (오래된 순 정렬은 컨트롤러에서 설정)
-        return episodeRepository.findByStatusWithContent(Status.PENDING, pageable);
+    public List<ContentBasicDTO> getPendingContents() {
+        return contentRepository.findByStatusInWithAuthor(List.of(Status.PENDING))
+                .stream()
+                .map(ContentBasicDTO::new)
+                .collect(Collectors.toList());
     }
 
     @Transactional(readOnly = true)
+    public List<EpisodeDTO> getPendingEpisodes() {
+        return episodeRepository.findByStatus(Status.PENDING)
+                .stream()
+                .map(EpisodeDTO::new)
+                .collect(Collectors.toList());
+    }
+
+    // ==========================================
+    //  🌟 수정 2: 작품 상세 검수 (Map 폐기 -> 기존 DTO 반환)
+    // ==========================================
+    @Transactional(readOnly = true)
+    public ContentBasicDTO getContentInspectionDetail(Long contentId) {
+        Content c = contentRepository.findById(contentId)
+                .orElseThrow(() -> new IllegalArgumentException("작품을 찾을 수 없습니다."));
+        return new ContentBasicDTO(c);
+    }
+
+    @Transactional
+    public void approveContent(Long contentId) {
+        Content c = contentRepository.findById(contentId).orElseThrow();
+
+        // 🌟 핵심 수술: 복제본인지 확인하고 덮어쓰기!
+        if (c.getOriginalId() != null) {
+            Content original = contentRepository.findById(c.getOriginalId()).orElseThrow();
+            original.setTitle(c.getTitle());
+            original.setType(c.getType());
+            original.setGenre(c.getGenre());
+            original.setSummary(c.getSummary());
+            original.setDescription(c.getDescription());
+            original.setSerialDay(c.getSerialDay());
+            original.setVideoUrl(c.getVideoUrl());
+            if (c.getThumbnailUrl() != null) {
+                original.setThumbnailUrl(c.getThumbnailUrl());
+            }
+
+            contentRepository.delete(c); // 덮어씌운 후 복제본은 깔끔하게 삭제!
+
+            if (original.getAuthor() != null) {
+                notificationService.send(original.getAuthor().getId(), "[" + original.getTitle() + "] 작품 수정이 승인되었습니다.", Notification.NotificationType.APPROVE, "/author/contents");
+            }
+        } else {
+            // 신규 승인
+            c.approve();
+            if (c.getAuthor() != null) {
+                notificationService.send(c.getAuthor().getId(), "[" + c.getTitle() + "] 작품이 승인되었습니다.", Notification.NotificationType.APPROVE, "/author/contents");
+            }
+        }
+    }
+
+    @Transactional
+    public void rejectContent(Long contentId, String reason) {
+        Content c = contentRepository.findById(contentId).orElseThrow();
+        c.reject(reason);
+        if (c.getAuthor() != null) {
+            notificationService.send(c.getAuthor().getId(), "[" + c.getTitle() + "] 작품이 반려되었습니다. [사유: " + reason + "]", Notification.NotificationType.REJECT, "/author/contents");
+        }
+    }
+
+    // ==========================================
+    //  회차(Episode) 검수 로직 (엔티티 반환 유지는 컨트롤러에서 DTO 변환)
+    // ==========================================
+    @Transactional(readOnly = true)
     public Episode getEpisodeDetail(Long episodeId) {
-        return episodeRepository.findByIdWithDetails(episodeId)
-                .orElseThrow(() -> new IllegalArgumentException("해당 회차를 찾을 수 없습니다."));
+        return episodeRepository.findByIdWithDetails(episodeId).orElseThrow();
     }
 
     @Transactional
     public void approveEpisode(Long episodeId, LocalDateTime scheduledAt) {
-        Episode episode = getEpisodeDetail(episodeId);
-        Content content = episode.getContent();
-        String textForAI = episode.getExtractableTextForAI();
-        String aiSummary = null;
+        Episode draft = getEpisodeDetail(episodeId);
+        Content content = draft.getContent();
 
-        if (textForAI != null && !textForAI.trim().isEmpty()) {
-            try {
-                aiSummary = aiRequestUtil.sendRequest(textForAI);
-            } catch (Exception e) {
-                e.printStackTrace();
+        // 🌟 핵심 수술: 복제본(수정본)일 경우 원본 덮어쓰기!
+        if (draft.getOriginalId() != null) {
+            Episode original = getEpisodeDetail(draft.getOriginalId());
+            original.setEpisodeTitle(draft.getEpisodeTitle());
+            original.setIsFree(draft.getIsFree());
+
+            // 🌟 날짜 수정: 작가가 수정하면서 세팅한 예약일(draft.getScheduledAt())을 최우선으로 적용!
+            original.setScheduledAt(draft.getScheduledAt() != null ? draft.getScheduledAt() : scheduledAt);
+
+            if (draft.getThumbnailUrl() != null) {
+                original.setThumbnailUrl(draft.getThumbnailUrl());
             }
-        }
 
-        episode.approve(scheduledAt, aiSummary);
+            episodeRepository.delete(draft); // 덮어씌운 후 복제본 삭제
 
-        if (episode.getEpisodeNumber() == 1 && content.getStatus() == Status.PENDING) {
-            content.approve();
-        }
+            if (content.getAuthor() != null) {
+                notificationService.send(content.getAuthor().getId(), String.format("[%s] %d화 수정이 승인되었습니다.", content.getTitle(), original.getEpisodeNumber()), Notification.NotificationType.APPROVE, "/author/contents");
+            }
+        } else {
+            // 기존 신규 승인 로직
+            String textForAI = draft.getExtractableTextForAI();
+            String aiSummary = null;
 
-        // 🌟 수정됨: 작가가 있을 때만 알림 전송 (에러 방지)
-        if (content.getAuthor() != null) {
-            String approveMessage = String.format("[%s] %d화가 승인되었습니다. 연재를 시작합니다!",
-                    content.getTitle(), episode.getEpisodeNumber());
+            if (textForAI != null && !textForAI.trim().isEmpty()) {
+                try { aiSummary = aiRequestUtil.sendRequest(textForAI); } catch (Exception e) { e.printStackTrace(); }
+            }
 
-            notificationService.send(
-                    content.getAuthor().getId(),
-                    approveMessage,
-                    Notification.NotificationType.APPROVE,
-                    "/author/contents"
-            );
+            // 🌟 날짜 수정: 신규 등록 시에도 작가가 설정한 예약일(draft.getScheduledAt())을 최우선으로 적용!
+            LocalDateTime finalScheduledAt = draft.getScheduledAt() != null ? draft.getScheduledAt() : scheduledAt;
+            draft.approve(finalScheduledAt, aiSummary);
+
+            if (draft.getEpisodeNumber() == 1 && content.getStatus() == Status.PENDING) {
+                content.approve();
+            }
+
+            if (content.getAuthor() != null) {
+                notificationService.send(content.getAuthor().getId(), String.format("[%s] %d화가 승인되었습니다.", content.getTitle(), draft.getEpisodeNumber()), Notification.NotificationType.APPROVE, "/author/contents");
+            }
         }
     }
 
     @Transactional
     public void rejectEpisode(Long episodeId, String rejectReason) {
-        if (rejectReason == null || rejectReason.trim().isEmpty()) {
-            throw new IllegalArgumentException("반려 사유는 필수 입력 사항입니다.");
-        }
-
+        if (rejectReason == null || rejectReason.trim().isEmpty()) throw new IllegalArgumentException("사유 필수");
         Episode episode = getEpisodeDetail(episodeId);
         Content content = episode.getContent();
-
         episode.reject(rejectReason);
 
         if (episode.getEpisodeNumber() == 1 && content.getStatus() == Status.PENDING) {
             content.reject("1화 반려로 인한 기각: " + rejectReason);
         }
 
-        // 🌟 수정됨: 작가가 있을 때만 알림 전송 (에러 방지)
         if (content.getAuthor() != null) {
-            String rejectMessage = String.format("[%s] %d화가 반려되었습니다. [사유: %s]",
-                    content.getTitle(),
-                    episode.getEpisodeNumber(),
-                    rejectReason);
-
-            notificationService.send(
-                    content.getAuthor().getId(),
-                    rejectMessage,
-                    Notification.NotificationType.REJECT,
-                    "/author/contents"
-            );
+            notificationService.send(content.getAuthor().getId(), String.format("[%s] %d화가 반려되었습니다. [사유: %s]", content.getTitle(), episode.getEpisodeNumber(), rejectReason), Notification.NotificationType.REJECT, "/author/contents");
         }
     }
 
     @Transactional(readOnly = true)
-    public List<Episode> getApprovedList() {
-        return episodeRepository.findByStatus(Status.APPROVED);
-    }
+    public List<Episode> getApprovedList() { return episodeRepository.findByStatus(Status.APPROVED); }
 
     @Transactional
     public void blindContent(Long episodeId, String reason) {
         Episode episode = getEpisodeDetail(episodeId);
         episode.blind(reason);
-
-        String blindMessage = String.format("[%s] %d화가 관리자에 의해 블라인드 처리되었습니다. [사유: %s]",
-                episode.getContent().getTitle(),
-                episode.getEpisodeNumber(),
-                reason);
-
-        notificationService.send(
-                episode.getContent().getAuthor().getId(),
-                blindMessage,
-                Notification.NotificationType.REJECT,
-                "/author/contents"
-        );
+        if (episode.getContent().getAuthor() != null) {
+            notificationService.send(episode.getContent().getAuthor().getId(), String.format("[%s] %d화가 강제 블라인드 되었습니다. [사유: %s]", episode.getContent().getTitle(), episode.getEpisodeNumber(), reason), Notification.NotificationType.REJECT, "/author/contents");
+        }
     }
 }

@@ -53,4 +53,10 @@ public class AdminContentController {
         adminContentService.toggleEpisodeBlindStatus(episodeId);
         return ResponseEntity.ok().build();
     }
+
+    @PutMapping("/content/{contentId}/blind-all")
+    public ResponseEntity<Void> blindEntireContent(@PathVariable Long contentId) {
+        adminContentService.blindEntireContent(contentId);
+        return ResponseEntity.ok().build();
+    }
 }
