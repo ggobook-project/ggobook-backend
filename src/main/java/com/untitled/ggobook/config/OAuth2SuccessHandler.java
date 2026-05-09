@@ -10,6 +10,7 @@ import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.ResponseCookie;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.oauth2.client.authentication.OAuth2AuthenticationToken;
@@ -26,6 +27,10 @@ import java.time.format.DateTimeFormatter;
 @Component
 @RequiredArgsConstructor
 public class OAuth2SuccessHandler extends SimpleUrlAuthenticationSuccessHandler {
+
+
+    @Value("${app.base-url}")
+    private String baseUrl;
 
     private final JwtUtil jwtUtil;
     private final UserRepository userRepository;
@@ -54,7 +59,7 @@ public class OAuth2SuccessHandler extends SimpleUrlAuthenticationSuccessHandler 
                 String encodedReason = URLEncoder.encode(reason, StandardCharsets.UTF_8);
                 String encodedDate = URLEncoder.encode(endDate, StandardCharsets.UTF_8);
 
-                String targetUrl = UriComponentsBuilder.fromUriString("http://localhost:5173/login")
+                String targetUrl = UriComponentsBuilder.fromUriString(baseUrl + "/login")
                         .queryParam("error", "SUSPENDED")
                         .queryParam("reason", encodedReason)
                         .queryParam("date", encodedDate)
@@ -66,7 +71,7 @@ public class OAuth2SuccessHandler extends SimpleUrlAuthenticationSuccessHandler 
         }
 
         if (user.getStatus() == UserStatus.WITHDRAWN) {
-            String targetUrl = UriComponentsBuilder.fromUriString("http://localhost:5173/login")
+            String targetUrl = UriComponentsBuilder.fromUriString(baseUrl + "/login")
                     .queryParam("error", "WITHDRAWN")
                     .build().toUriString();
             getRedirectStrategy().sendRedirect(request, response, targetUrl);
@@ -86,7 +91,7 @@ public class OAuth2SuccessHandler extends SimpleUrlAuthenticationSuccessHandler 
 
         response.addHeader("Set-Cookie", cookie.toString());
 
-        String targetUrl = UriComponentsBuilder.fromUriString("http://localhost:5173/oauth2/redirect")
+        String targetUrl = UriComponentsBuilder.fromUriString(baseUrl + "/oauth2/redirect")
                 .queryParam("token", accessToken)
                 .build().toUriString();
 

@@ -25,7 +25,6 @@ public class RedisLockManager {
     public Boolean lock(Long novelId, Long userId) {
         String key = "lock:novel:" + novelId;
 
-        // 🌟 수정됨: 값(Value)에 "유저ID:현재시간(밀리초)" 형태로 최초 획득 시간을 함께 기록합니다.
         String value = userId + ":" + System.currentTimeMillis();
 
         // setIfAbsent: 키가 없을 때만 데이터를 저장 (동시성 방어)
