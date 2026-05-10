@@ -100,5 +100,9 @@ public class Episode {
         draft.setStatus(Status.PENDING);
         return draft;
     }
+
+    public void updateSummary(String aiSummary) {
+        this.aiSummary = aiSummary;
+    }
 }
 

@@ -109,14 +109,35 @@ public class AdminInspectionService {
         Episode draft = getEpisodeDetail(episodeId);
         Content content = draft.getContent();
 
-        // 🌟 핵심 수술: 복제본(수정본)일 경우 원본 덮어쓰기!
+        // 🌟 1. 신규/수정 공통: 먼저 AI 요약을 무조건 진행합니다.
+        String textForAI = draft.getExtractableTextForAI();
+        String aiSummary = null;
+
+        if (textForAI != null && !textForAI.trim().isEmpty()) {
+            try {
+                // AI 요약 요청
+                aiSummary = aiRequestUtil.sendRequest(textForAI);
+            } catch (Exception e) {
+                e.printStackTrace();
+                // 필요시 log.error("AI 요약 실패", e); 로 변경
+            }
+        }
+
+        // 🌟 2. 날짜 설정: 작가가 지정한 날짜 최우선
+        LocalDateTime finalScheduledAt = draft.getScheduledAt() != null ? draft.getScheduledAt() : scheduledAt;
+
+        // 🌟 3. 분기 처리: 복제본 덮어쓰기 vs 신규 승인
         if (draft.getOriginalId() != null) {
+            // [수정본 승인] 기존 원본을 찾아서 덮어씌웁니다.
             Episode original = getEpisodeDetail(draft.getOriginalId());
             original.setEpisodeTitle(draft.getEpisodeTitle());
             original.setIsFree(draft.getIsFree());
+            original.setScheduledAt(finalScheduledAt);
 
-            // 🌟 날짜 수정: 작가가 수정하면서 세팅한 예약일(draft.getScheduledAt())을 최우선으로 적용!
-            original.setScheduledAt(draft.getScheduledAt() != null ? draft.getScheduledAt() : scheduledAt);
+            // 💡 추가된 핵심 로직: 새롭게 받아온 AI 요약본도 원본에 덮어씌워 줍니다!
+            if (aiSummary != null) {
+                original.updateSummary(aiSummary);
+            }
 
             if (draft.getThumbnailUrl() != null) {
                 original.setThumbnailUrl(draft.getThumbnailUrl());
@@ -128,16 +149,7 @@ public class AdminInspectionService {
                 notificationService.send(content.getAuthor().getId(), String.format("[%s] %d화 수정이 승인되었습니다.", content.getTitle(), original.getEpisodeNumber()), Notification.NotificationType.APPROVE, "/author/contents");
             }
         } else {
-            // 기존 신규 승인 로직
-            String textForAI = draft.getExtractableTextForAI();
-            String aiSummary = null;
-
-            if (textForAI != null && !textForAI.trim().isEmpty()) {
-                try { aiSummary = aiRequestUtil.sendRequest(textForAI); } catch (Exception e) { e.printStackTrace(); }
-            }
-
-            // 🌟 날짜 수정: 신규 등록 시에도 작가가 설정한 예약일(draft.getScheduledAt())을 최우선으로 적용!
-            LocalDateTime finalScheduledAt = draft.getScheduledAt() != null ? draft.getScheduledAt() : scheduledAt;
+            // [신규 승인] 기존 로직 유지하되, 위에서 미리 구한 aiSummary를 전달합니다.
             draft.approve(finalScheduledAt, aiSummary);
 
             if (draft.getEpisodeNumber() == 1 && content.getStatus() == Status.PENDING) {
